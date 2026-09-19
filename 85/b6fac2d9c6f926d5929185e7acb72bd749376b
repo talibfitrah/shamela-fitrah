@@ -1,0 +1,21 @@
+.gitignore
+  s_c3cfccecb8158d::t_d7fbe5f7d4a136 1-19
+tools/shamela_common.py
+  s_c3cfccecb8158d::t_03e3c07e83121c 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "85b6fac2d9c6f926d5929185e7acb72bd749376b",
+  "prompts": {},
+  "sessions": {
+    "s_c3cfccecb8158d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03421691-a525-45c1-a39c-5e9201796f22",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    }
+  }
+}
