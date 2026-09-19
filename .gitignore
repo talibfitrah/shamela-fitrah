@@ -1,0 +1,19 @@
+# secrets — never commit
+signing/
+keystore.properties
+*.keystore
+*.jks
+
+# build output / local state
+.gradle/
+.kotlin/
+build/
+target/
+local.properties
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.apk
+*.aab
+__pycache__/
+.idea/
+.DS_Store

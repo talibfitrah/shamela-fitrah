@@ -1,0 +1,7 @@
+-keep class org.murabbie.shamela.data.** { *; }
+-keep class androidx.sqlite.driver.bundled.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**

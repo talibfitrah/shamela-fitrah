@@ -1,0 +1,75 @@
+{
+  "format": "shamela-nas-manifest",
+  "version": 1,
+  "generated": "2026-09-13T19:19:48Z",
+  "app": {
+    "version_code": 11,
+    "version_name": "1.2.0",
+    "apk": "https://files.murabbie.org/fsdownload/BVnz9kUAx/shamela-1.2.0-universal.apk",
+    "apk_page": "https://files.murabbie.org/sharing/BVnz9kUAx",
+    "notes": "إخراج الكتاب أو الفصل أو نطاق صفحات أو الصفحة إلى Word (docx بخط Traditional Arabic وعناوين Heading) أو PDF، من قائمة القارئ ومن بطاقة الكتاب",
+    "apks": {
+      "shamela-1.2.0-arm32.apk": {
+        "url": "https://files.murabbie.org/fsdownload/zsN8gQqNt/shamela-1.2.0-arm32.apk",
+        "page": "https://files.murabbie.org/sharing/zsN8gQqNt",
+        "size": 5834502,
+        "sha256": "7d2ac02e44c60c04c770c3ad7cbbe0d30ee6515d25793fbe65bdb50f661d7035"
+      },
+      "shamela-1.2.0-arm64.apk": {
+        "url": "https://files.murabbie.org/fsdownload/yciZrfpms/shamela-1.2.0-arm64.apk",
+        "page": "https://files.murabbie.org/sharing/yciZrfpms",
+        "size": 6250390,
+        "sha256": "630bef1a91fd2a602126af82affe6274a5f934a04981352d4e733e3d5b84da79"
+      },
+      "shamela-1.2.0-universal.apk": {
+        "url": "https://files.murabbie.org/fsdownload/BVnz9kUAx/shamela-1.2.0-universal.apk",
+        "page": "https://files.murabbie.org/sharing/BVnz9kUAx",
+        "size": 11903673,
+        "sha256": "376357cb336adec857e29ebfae96ec80e96ed0635e6e19a32670ede950e36630"
+      }
+    }
+  },
+  "data": {
+    "version": "1448-2",
+    "source": "shamela-database-1448",
+    "books_count": 8591,
+    "pages_count": 7604807,
+    "master": {
+      "size": 2132112,
+      "sha256": "cf940681b231c1836e540c60857ed4167759a4ddc9ef64044c23dba9a8caa60a",
+      "url": "https://files.murabbie.org/fsdownload/9yfNvjjrR/master.db.gz",
+      "page": "https://files.murabbie.org/sharing/9yfNvjjrR",
+      "raw_size": 5713920,
+      "path": "/downloads/shamela/master.db.gz"
+    },
+    "index": {
+      "size": 1709165,
+      "sha256": "9b9e7a97000be5045d324022f0804ee0a28aee556efc0a22dce2f174a18fc3c2",
+      "url": "https://files.murabbie.org/fsdownload/Ox50e9gb7/index.json",
+      "page": "https://files.murabbie.org/sharing/Ox50e9gb7",
+      "path": "/downloads/shamela/index.json"
+    },
+    "packs": {
+      "books.pack": {
+        "url": "https://files.murabbie.org/fsdownload/e4hWIOI7a/books.pack",
+        "page": "https://files.murabbie.org/sharing/e4hWIOI7a",
+        "path": "/downloads/shamela/books.pack",
+        "size": 8931755475,
+        "sha256": "2094177d31667772179020f4f377aa04e6e9c5945ce1b5a5ca4f6190d2e55b4c"
+      }
+    },
+    "services": {
+      "size": 70279007,
+      "sha256": "e2550f4665bdd87794cc6f93c975515d6a72572d3c073d0aac3c9d2f449868d8",
+      "url": "https://files.murabbie.org/fsdownload/qRj62kwSq/services.db.gz",
+      "page": "https://files.murabbie.org/sharing/qRj62kwSq",
+      "raw_size": 224702464,
+      "path": "/downloads/shamela/services.db.gz"
+    }
+  },
+  "site": {
+    "recent": "https://shamela.ws",
+    "book": "https://shamela.ws/book/{id}"
+  },
+  "folder": "https://files.murabbie.org/sharing/ehniFEwJg"
+}

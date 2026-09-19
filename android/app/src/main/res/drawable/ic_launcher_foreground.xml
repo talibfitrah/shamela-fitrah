@@ -1,0 +1,7 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- كتاب مفتوح -->
+    <path android:fillColor="#FFF8F3E6" android:pathData="M28,34 C36,30 46,31 54,36 C62,31 72,30 80,34 L80,76 C72,72 62,73 54,78 C46,73 36,72 28,76 Z"/>
+    <path android:fillColor="#FF5C3D1E" android:pathData="M53,37 L55,37 L55,78 L53,78 Z"/>
+    <path android:fillColor="#FFC9A227" android:pathData="M34,44 L48,44 L48,47 L34,47 Z M34,52 L48,52 L48,55 L34,55 Z M34,60 L48,60 L48,63 L34,63 Z M60,44 L74,44 L74,47 L60,47 Z M60,52 L74,52 L74,55 L60,55 Z M60,60 L74,60 L74,63 L60,63 Z"/>
+</vector>
