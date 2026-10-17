@@ -33,12 +33,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -64,24 +66,41 @@ private sealed class Scope {
     data class Selected(val ids: Set<Int>) : Scope()
 }
 
+/**
+ * حالة البحث مربوطة بمدخل التنقل لا بالتركيب: عند فتح نتيجة ثم الرجوع تبقى النتائج والاستعلام والنطاق، ويستمر البحث الجاري.
+ * في ViewModel لا في rememberSaveable لأن النتائج قد تبلغ آلاف الصفوف (حدّ Bundle نحو ١ م.ب).
+ * ponytail: تضيع إن قتل النظام العملية؛ لحفظ الاستعلام وحده أضف SavedStateHandle.
+ */
+private class SearchSession(initialQuery: String) : ViewModel() {
+    val query = mutableStateOf(initialQuery)
+    val searchScope = mutableStateOf<Scope>(Scope.AllInstalled)
+    val hits = mutableStateOf<List<SearchHit>>(emptyList())
+    val progress = mutableStateOf<SearchEvent.Progress?>(null)
+    val done = mutableStateOf<SearchEvent.Done?>(null)
+    val running = mutableStateOf<Job?>(null)
+    val groupByBook = mutableStateOf(true)
+    val expandedBooks = mutableStateOf<Set<Int>>(emptySet())
+    var scopeApplied = false   // نطاق الكتاب يُطبَّق مرة واحدة فلا يمحو ما اختاره المستخدم بعد الرجوع
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: String?) {
     val settings by app.settings.state.collectAsState()
-    val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf(initialQuery ?: "") }
-    var searchScope by remember { mutableStateOf<Scope>(Scope.AllInstalled) }
-    var hits by remember { mutableStateOf<List<SearchHit>>(emptyList()) }
-    var progress by remember { mutableStateOf<SearchEvent.Progress?>(null) }
-    var done by remember { mutableStateOf<SearchEvent.Done?>(null) }
-    var running by remember { mutableStateOf<Job?>(null) }
+    val st = viewModel { SearchSession(initialQuery ?: "") }
+    var query by st.query
+    var searchScope by st.searchScope
+    var hits by st.hits
+    var progress by st.progress
+    var done by st.done
+    var running by st.running
     var history by remember { mutableStateOf<List<String>>(emptyList()) }
     var showScope by remember { mutableStateOf(false) }
-    var groupByBook by remember { mutableStateOf(true) }
-    var expandedBooks by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var groupByBook by st.groupByBook
+    var expandedBooks by st.expandedBooks
     val installedVer by app.library.installedVersion.collectAsState()
 
-    LaunchedEffect(bookId) { if (bookId != null) app.book(bookId)?.let { searchScope = Scope.OneBook(it) } }
+    LaunchedEffect(bookId) { if (bookId != null && !st.scopeApplied) app.book(bookId)?.let { searchScope = Scope.OneBook(it); st.scopeApplied = true } }
     LaunchedEffect(Unit) { history = app.userDb.searches().map { it.query } }
 
     suspend fun booksForScope(): List<Book> {
@@ -94,12 +113,13 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
         }
     }
 
+    fun reset() { running?.cancel(); hits = emptyList(); done = null; progress = null; expandedBooks = emptySet() }
+
     fun run() {
         val q = query.trim()
         if (q.isBlank()) return
-        running?.cancel()
-        hits = emptyList(); done = null; progress = null; expandedBooks = emptySet()
-        running = scope.launch {
+        reset()
+        running = st.viewModelScope.launch {
             app.userDb.addSearch(q); history = app.userDb.searches().map { it.query }
             val books = booksForScope()
             if (books.isEmpty()) { done = SearchEvent.Done(0, 0); return@launch }
@@ -116,7 +136,7 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
         }
     }
 
-    LaunchedEffect(Unit) { if (!initialQuery.isNullOrBlank()) run() }
+    LaunchedEffect(Unit) { if (!initialQuery.isNullOrBlank() && running == null) run() }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -124,7 +144,7 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
             navigationIcon = { if (bookId != null) IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع") } },
             actions = { IconButton(onClick = { showScope = true }) { Icon(Icons.Default.FilterList, contentDescription = "النطاق") } },
         )
-        SearchField(query, { query = it }, "اكتب كلمة أو أكثر…", onSearch = { run() })
+        SearchField(query, { query = it; if (it.isBlank()) reset() }, "اكتب كلمة أو أكثر…", onSearch = { run() })
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Chip("كل الكلمات", settings.searchMode == 0) { app.settings.update { it.copy(searchMode = 0) } }
             Chip("أي كلمة", settings.searchMode == 1) { app.settings.update { it.copy(searchMode = 1) } }

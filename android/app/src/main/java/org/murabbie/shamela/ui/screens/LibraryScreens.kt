@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,7 +102,7 @@ private fun CategoriesTab(app: App, nav: NavHostController) {
 
 @Composable
 private fun AuthorsTab(app: App, nav: NavHostController) {
-    var q by remember { mutableStateOf("") }
+    var q by rememberSaveable { mutableStateOf("") }
     var authors by remember { mutableStateOf<List<Author>?>(null) }
     LaunchedEffect(q) { authors = app.library.authors(q) }
     Column(Modifier.fillMaxSize()) {
@@ -156,7 +157,7 @@ fun BookList(app: App, nav: NavHostController, books: List<Book>, showCategory: 
 
 @Composable
 private fun AllBooksTab(app: App, nav: NavHostController) {
-    var q by remember { mutableStateOf("") }
+    var q by rememberSaveable { mutableStateOf("") }
     var books by remember { mutableStateOf<List<Book>?>(null) }
     LaunchedEffect(q) { books = if (q.isBlank()) app.library.allBooks() else app.library.searchBooks(q) }
     Column(Modifier.fillMaxSize()) {
@@ -170,7 +171,7 @@ private fun AllBooksTab(app: App, nav: NavHostController) {
 @Composable
 private fun InstalledTab(app: App, nav: NavHostController) {
     val installedVer by app.library.installedVersion.collectAsState()
-    var q by remember { mutableStateOf("") }
+    var q by rememberSaveable { mutableStateOf("") }
     var books by remember { mutableStateOf<List<Book>?>(null) }
     LaunchedEffect(installedVer, q) {
         val ids = app.library.installedIds()
@@ -216,7 +217,7 @@ private fun RecentTab(app: App, nav: NavHostController) {
 fun CategoryBooksScreen(app: App, nav: NavHostController, id: Int) {
     var cat by remember { mutableStateOf<Category?>(null) }
     var books by remember { mutableStateOf<List<Book>?>(null) }
-    var q by remember { mutableStateOf("") }
+    var q by rememberSaveable { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     var confirmAll by remember { mutableStateOf(false) }
     LaunchedEffect(id) { cat = app.library.category(id); books = app.library.booksInCategory(id) }
