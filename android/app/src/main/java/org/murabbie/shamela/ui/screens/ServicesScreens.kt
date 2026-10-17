@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -162,7 +163,7 @@ fun QuranScreen(app: App, nav: NavHostController) {
     var suras by remember { mutableStateOf<List<Sura>>(emptyList()) }
     var sura by remember { mutableStateOf<Sura?>(null) }
     var ayat by remember { mutableStateOf<List<Aya>>(emptyList()) }
-    var q by remember { mutableStateOf("") }
+    var q by rememberSaveable { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Aya>?>(null) }
     var tafsirAya by remember { mutableStateOf<Aya?>(null) }
     var uthmani by remember { mutableStateOf(true) }
@@ -241,7 +242,7 @@ fun TafsirSheet(app: App, nav: NavHostController, a: Aya, suras: List<Sura>, onD
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RowatSearchScreen(app: App, nav: NavHostController) {
-    var q by remember { mutableStateOf("") }
+    var q by rememberSaveable { mutableStateOf("") }
     var list by remember { mutableStateOf<List<Rawi>>(emptyList()) }
     LaunchedEffect(q) { list = if (q.isBlank()) emptyList() else runCatching { app.services.searchRawi(q) }.getOrDefault(emptyList()) }
     Column(Modifier.fillMaxSize()) {

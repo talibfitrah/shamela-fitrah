@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,8 +85,8 @@ fun ScholarScreen(app: App, nav: NavHostController, key: String) {
     var own by remember { mutableStateOf<List<Book>?>(null) }
     var fresh by remember { mutableStateOf<List<Book>>(emptyList()) }
     var about by remember { mutableStateOf<List<Book>>(emptyList()) }
-    var q by remember { mutableStateOf("") }
-    var tab by remember { mutableStateOf(0) }   // 0 مؤلفاته، 1 حوله
+    var q by rememberSaveable { mutableStateOf("") }
+    var tab by rememberSaveable { mutableStateOf(0) }   // 0 مؤلفاته، 1 حوله
     var confirmAll by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf<Book?>(null) }
     val jobs by app.downloads.jobs.collectAsState()

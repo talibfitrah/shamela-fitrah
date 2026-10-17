@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,7 +68,7 @@ fun NewBooksScreen(app: App, nav: NavHostController) {
     val installed = remember(installedVer) { app.library.installedIds() }
     val jobs by app.downloads.jobs.collectAsState()
     val queued by app.downloads.queued.collectAsState()
-    var q by remember { mutableStateOf("") }
+    var q by rememberSaveable { mutableStateOf("") }
     val diag by org.murabbie.shamela.data.NasHttp.status.collectAsState()
 
     // فحص تلقائي إن لم يُفحص من قبل أو مضى يوم
