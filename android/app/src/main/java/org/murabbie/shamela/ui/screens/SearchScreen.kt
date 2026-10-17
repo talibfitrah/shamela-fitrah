@@ -80,6 +80,7 @@ private class SearchSession(initialQuery: String) : ViewModel() {
     val running = mutableStateOf<Job?>(null)
     val groupByBook = mutableStateOf(true)
     val expandedBooks = mutableStateOf<Set<Int>>(emptySet())
+    val history = mutableStateOf<List<String>>(emptyList())
     var scopeApplied = false   // نطاق الكتاب يُطبَّق مرة واحدة فلا يمحو ما اختاره المستخدم بعد الرجوع
 }
 
@@ -94,7 +95,7 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
     var progress by st.progress
     var done by st.done
     var running by st.running
-    var history by remember { mutableStateOf<List<String>>(emptyList()) }
+    var history by st.history
     var showScope by remember { mutableStateOf(false) }
     var groupByBook by st.groupByBook
     var expandedBooks by st.expandedBooks

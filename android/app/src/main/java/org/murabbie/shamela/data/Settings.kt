@@ -25,6 +25,8 @@ data class AppSettings(
     val searchByRoot: Boolean = false,
     val autoTashkeel: Boolean = false,   // تشكيل آلي للنص غير المشكول (يحتاج معجم التشكيل)
     val ttsRate: Float = 1.0f,          // سرعة القراءة الصوتية
+    val ttsPitch: Float = 0.85f,        // غِلَظ الصوت (طبقة النطق؛ أقل = أعمق)
+    val ttsVoice: String = "",          // اسم الصوت المختار؛ فارغ = تلقائي (أفضل صوت رجالي متاح)
     val lastManifestCheck: Long = 0,
     val dataVersion: String = "",
     val storageExternal: Boolean = false,
@@ -58,6 +60,8 @@ class Settings(context: Context) {
         searchByRoot = prefs.getBoolean("searchByRoot", false),
         autoTashkeel = prefs.getBoolean("autoTashkeel", false),
         ttsRate = prefs.getFloat("ttsRate", 1.0f),
+        ttsPitch = prefs.getFloat("ttsPitch", 0.85f),
+        ttsVoice = prefs.getString("ttsVoice", "") ?: "",
         lastManifestCheck = prefs.getLong("lastManifestCheck", 0),
         dataVersion = prefs.getString("dataVersion", "") ?: "",
         storageExternal = prefs.getBoolean("storageExternal", false),
@@ -87,6 +91,8 @@ class Settings(context: Context) {
             .putBoolean("searchByRoot", s.searchByRoot)
             .putBoolean("autoTashkeel", s.autoTashkeel)
             .putFloat("ttsRate", s.ttsRate)
+            .putFloat("ttsPitch", s.ttsPitch)
+            .putString("ttsVoice", s.ttsVoice)
             .putLong("lastManifestCheck", s.lastManifestCheck)
             .putString("dataVersion", s.dataVersion)
             .putBoolean("storageExternal", s.storageExternal)

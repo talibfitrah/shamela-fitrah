@@ -19,8 +19,8 @@ android {
         applicationId = "org.murabbie.shamela"
         minSdk = 24
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.4.0"
+        versionCode = 15
+        versionName = "1.4.2"
         vectorDrawables.useSupportLibrary = true
         // رابط manifest الدائم على NAS (احتياطي إن تعذّرت الواجهة الموثَّقة)
         buildConfigField("String", "DEFAULT_MANIFEST_URL", "\"${project.findProperty("manifestUrl") ?: "https://files.murabbie.org/fsdownload/FnGtHqpG9/manifest.json"}\"")
