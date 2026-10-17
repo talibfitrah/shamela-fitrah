@@ -182,7 +182,10 @@ private fun InstalledTab(app: App, nav: NavHostController) {
         SearchField(q, { q = it }, "بحث في الكتب المثبَّتة")
         val list = books ?: return Loading()
         val size = remember(installedVer) { app.library.installedSize() }
-        Text("${ArabicText.arabicDigits(list.size)} كتاب مثبَّت — ${ArabicText.formatSize(size)}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("${ArabicText.arabicDigits(list.size)} كتاب مثبَّت — ${ArabicText.formatSize(size)}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onClick = { nav.go("import") }) { Text("إدراج من ملف") }
+        }
         if (list.isEmpty()) EmptyState("لم تنزّل كتبًا بعد.\nتصفح الأقسام أو المؤلفين واضغط أيقونة التنزيل بجانب الكتاب.") else BookList(app, nav, list, showCategory = true)
     }
 }

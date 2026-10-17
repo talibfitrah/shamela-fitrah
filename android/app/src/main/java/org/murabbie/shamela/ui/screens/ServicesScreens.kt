@@ -111,6 +111,7 @@ fun ServicesScreen(app: App, nav: NavHostController) {
                         }
                     }
                 }
+                TashkeelCard(app)
                 val ready = state is ServicesState.Ready
                 ServiceItem(Icons.Default.MenuBook, "القرآن الكريم وتفسير الآية", "تصفح السور والآيات، والبحث في الآيات، وفتح تفسير أي آية في ١٤ تفسيرًا", ready) { nav.go("quran") }
                 ServiceItem(Icons.Default.Groups, "تراجم الرواة", "البحث عن الراوي وعرض ترجمته وأقوال النقاد فيه ومروياته في الكتب العشرة", ready) { nav.go("rowat") }
@@ -121,6 +122,47 @@ fun ServicesScreen(app: App, nav: NavHostController) {
     }
     if (confirmRemove) AlertDialog(onDismissRequest = { confirmRemove = false }, title = { Text("حذف قاعدة الخدمات") }, text = { Text("تُحذف قاعدة الخدمات من الجهاز ويمكن تنزيلها مرة أخرى.") },
         confirmButton = { TextButton(onClick = { scope.launch { app.services.uninstall() }; confirmRemove = false }) { Text("حذف") } }, dismissButton = { TextButton(onClick = { confirmRemove = false }) { Text("إلغاء") } })
+}
+
+/** بطاقة معجم التشكيل الآلي */
+@Composable
+private fun TashkeelCard(app: App) {
+    val scope = rememberCoroutineScope()
+    val st by app.tashkeel.state.collectAsState()
+    val manifest by app.library.manifest.collectAsState()
+    val settings by app.settings.state.collectAsState()
+    var counts by remember { mutableStateOf<Pair<Long, Long>?>(null) }
+    var confirmRemove by remember { mutableStateOf(false) }
+    LaunchedEffect(st) { if (st is ServicesState.Ready) counts = runCatching { app.tashkeel.counts() }.getOrNull() }
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+        Column(Modifier.padding(14.dp)) {
+            Text("التشكيل الآلي لكل الكتب", style = MaterialTheme.typography.titleSmall)
+            Text("معجم مبني من الكلمات المشكولة في نصوص المكتبة نفسها: يُشكِّل الكلمات غير المشكولة في أي كتاب بأرجح صورها مع مراعاة الكلمة السابقة، ويترك المشكول كما هو. يُفعَّل من خيارات الخط في القارئ (تشكيل آلي)، ويُحسِّن القراءة الصوتية.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+            Spacer(Modifier.height(8.dp))
+            when (val s = st) {
+                is ServicesState.NotInstalled, is ServicesState.Error -> {
+                    val size = manifest?.tashkeel?.size?.takeIf { it > 0 }?.let { ArabicText.formatSize(it) } ?: "—"
+                    Text("حجم التنزيل $size.", style = MaterialTheme.typography.bodySmall)
+                    if (s is ServicesState.Error) Text(s.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Button(onClick = { scope.launch { if (app.tashkeel.install()) app.settings.update { it.copy(autoTashkeel = true, showTashkeel = true) } } }, modifier = Modifier.padding(top = 6.dp)) { Text("تنزيل معجم التشكيل") }
+                }
+                is ServicesState.Downloading -> {
+                    Text(s.message, style = MaterialTheme.typography.bodySmall)
+                    if (s.total > 0) LinearProgressIndicator(progress = { (s.bytes.toFloat() / s.total).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) else LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 6.dp))
+                }
+                is ServicesState.Ready -> {
+                    Text(counts?.let { "مثبَّت: ${ArabicText.arabicDigits(it.first)} كلمة، ${ArabicText.arabicDigits(it.second)} سياقًا ثنائيًّا" } ?: "مثبَّت", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("التشكيل الآلي في القارئ", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        androidx.compose.material3.Switch(checked = settings.autoTashkeel, onCheckedChange = { c -> app.settings.update { it.copy(autoTashkeel = c, showTashkeel = if (c) true else it.showTashkeel) } })
+                    }
+                    TextButton(onClick = { confirmRemove = true }) { Text("حذف المعجم") }
+                }
+            }
+        }
+    }
+    if (confirmRemove) AlertDialog(onDismissRequest = { confirmRemove = false }, title = { Text("حذف معجم التشكيل") }, text = { Text("يمكن تنزيله مرة أخرى.") },
+        confirmButton = { TextButton(onClick = { scope.launch { app.tashkeel.uninstall() }; confirmRemove = false }) { Text("حذف") } }, dismissButton = { TextButton(onClick = { confirmRemove = false }) { Text("إلغاء") } })
 }
 
 @Composable

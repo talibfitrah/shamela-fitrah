@@ -23,6 +23,8 @@ data class AppSettings(
     val searchInFoot: Boolean = true,
     val searchInTitles: Boolean = false,
     val searchByRoot: Boolean = false,
+    val autoTashkeel: Boolean = false,   // تشكيل آلي للنص غير المشكول (يحتاج معجم التشكيل)
+    val ttsRate: Float = 1.0f,          // سرعة القراءة الصوتية
     val lastManifestCheck: Long = 0,
     val dataVersion: String = "",
     val storageExternal: Boolean = false,
@@ -54,6 +56,8 @@ class Settings(context: Context) {
         searchInFoot = prefs.getBoolean("searchInFoot", true),
         searchInTitles = prefs.getBoolean("searchInTitles", false),
         searchByRoot = prefs.getBoolean("searchByRoot", false),
+        autoTashkeel = prefs.getBoolean("autoTashkeel", false),
+        ttsRate = prefs.getFloat("ttsRate", 1.0f),
         lastManifestCheck = prefs.getLong("lastManifestCheck", 0),
         dataVersion = prefs.getString("dataVersion", "") ?: "",
         storageExternal = prefs.getBoolean("storageExternal", false),
@@ -81,6 +85,8 @@ class Settings(context: Context) {
             .putBoolean("searchInFoot", s.searchInFoot)
             .putBoolean("searchInTitles", s.searchInTitles)
             .putBoolean("searchByRoot", s.searchByRoot)
+            .putBoolean("autoTashkeel", s.autoTashkeel)
+            .putFloat("ttsRate", s.ttsRate)
             .putLong("lastManifestCheck", s.lastManifestCheck)
             .putString("dataVersion", s.dataVersion)
             .putBoolean("storageExternal", s.storageExternal)
