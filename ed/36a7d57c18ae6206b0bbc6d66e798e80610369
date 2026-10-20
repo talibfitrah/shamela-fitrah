@@ -1,0 +1,21 @@
+tools/manifest.json
+  s_6f374043e4b35a::t_22b3eb978b063b 4,6-11,13-17,19-23,25-29,69-76
+android/app/src/main/assets/manifest.json
+  s_6f374043e4b35a::t_1886608cfbd53b 4,6-11,13-17,19-23,25-29,69-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed36a7d57c18ae6206b0bbc6d66e798e80610369",
+  "prompts": {},
+  "sessions": {
+    "s_6f374043e4b35a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7c3be32e-f98c-4bb4-8fb3-15baef18a711",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    }
+  }
+}
