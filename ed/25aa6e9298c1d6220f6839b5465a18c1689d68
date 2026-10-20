@@ -1,0 +1,29 @@
+CLAUDE.md
+  s_09d4e5be1e0d59::t_426077473760aa 3,48
+  s_de1bf4a6a65a94::t_6259eb514627fe 137
+  s_de1bf4a6a65a94::t_1d5b7b27a763a7 1-2,4-47,49-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ed25aa6e9298c1d6220f6839b5465a18c1689d68",
+  "prompts": {},
+  "sessions": {
+    "s_09d4e5be1e0d59": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "efd8be62-0e28-42c3-a6b0-889ce63c580d",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    },
+    "s_de1bf4a6a65a94": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92866209-ce63-4363-a42e-f4855687dccc",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    }
+  }
+}
