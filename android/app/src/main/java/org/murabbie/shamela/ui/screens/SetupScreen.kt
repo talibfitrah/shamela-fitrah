@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -47,7 +48,7 @@ fun SetupScreen(app: App) {
         if (state is LibraryState.NotInstalled && !started) { started = true; app.library.installMaster() }
     }
 
-    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text("المكتبة الشاملة", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text("نسخة الأندرويد — البيانات من خادم NAS", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -85,9 +86,12 @@ fun SetupScreen(app: App) {
         }
         if (showAdvanced) {
             Spacer(Modifier.height(16.dp))
+            // نسخة play: HTTPS فقط، فلا معنى لعنوان شبكة داخلية
+            if (!org.murabbie.shamela.BuildConfig.PLAY_STORE) {
             Text("إن كنت على شبكة البيت نفسها مع NAS فقد لا يصل الهاتف إلى عنوانه العام؛ أدخل عنوان NAS الداخلي (مثل 192.168.1.20:5000):", style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = base, onValueChange = { base = it }, label = { Text("عنوان الخادم البديل (اختياري)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
+            }
             OutlinedTextField(value = url, onValueChange = { url = it }, label = { Text("رابط manifest.json") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
             Button(onClick = { app.settings.update { it.copy(manifestUrl = url.trim(), nasBase = base.trim()) }; scope.launch { app.library.installMaster() } }) { Text("حفظ وإعادة المحاولة") }

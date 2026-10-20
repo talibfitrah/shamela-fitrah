@@ -27,12 +27,14 @@ class DownloadService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var tracker: Job? = null
+    private var foreground = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        startForegroundCompat(build("تنزيل الكتب…", -1f))
+        // قد يُرفض البدء (من الخلفية أو بعد نفاد حصة dataSync): لا نُسقط التطبيق
+        runCatching { startForegroundCompat(build("تنزيل الكتب…", -1f)) }.onSuccess { foreground = true }.onFailure { stopSelf() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -40,9 +42,13 @@ class DownloadService : Service() {
             App.instance.downloads.pauseAll()
             finish(); return START_NOT_STICKY
         }
+        if (!foreground) return START_NOT_STICKY  // لا إشعار دائم بلا خدمة أمامية
         if (tracker?.isActive != true) tracker = scope.launch { track() }
         return START_NOT_STICKY
     }
+
+    // أندرويد ١٥+: لخدمة dataSync سقف زمني؛ تجاهل النداء يُسقط التطبيق
+    override fun onTimeout(startId: Int, fgsType: Int) { App.instance.downloads.pauseAll(); finish() }
 
     private suspend fun track() {
         val dl = App.instance.downloads

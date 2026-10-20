@@ -3,4 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- نسخة Google Play: لا تثبيت حزم من خارج المتجر -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <!-- نسخة Google Play: HTTPS فقط (نكهة nas تُبقي النص الصريح لعنوان شبكة داخلية يُدخله المستخدم) -->
+    <application android:usesCleartextTraffic="false" tools:replace="android:usesCleartextTraffic" />
 </manifest>

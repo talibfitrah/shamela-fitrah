@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.SettingsBackupRestore
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
@@ -73,7 +75,7 @@ import org.murabbie.shamela.ui.go
 @Composable
 fun MoreScreen(app: App, nav: NavHostController) {
     val manifest by app.library.manifest.collectAsState()
-    val appUpdate = (manifest?.appVersionCode ?: 0) > BuildConfig.VERSION_CODE
+    val appUpdate = !BuildConfig.PLAY_STORE && (manifest?.appVersionCode ?: 0) > BuildConfig.VERSION_CODE
     val dataUpdate = app.library.dataUpdateAvailable()
     Column(Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("المزيد") })
@@ -85,6 +87,9 @@ fun MoreScreen(app: App, nav: NavHostController) {
             MoreItem(Icons.Default.Update, "المستجدات والتحديثات", (if (appUpdate) "يتوفر إصدار جديد من التطبيق" else if (dataUpdate) "يتوفر فهرس محدَّث" else "آخر الكتب المضافة في shamela.ws وتحديث الفهرس")) { nav.go("updates") }
             MoreItem(Icons.Default.Settings, "الإعدادات", "الخادم، التنزيل، العرض") { nav.go("settings") }
             MoreItem(Icons.Default.Info, "عن التطبيق والإحصائيات", "الإصدار ${BuildConfig.VERSION_NAME}") { nav.go("about") }
+            // سياسة Google Play لبيانات المستخدم تشترط رابط سياسة الخصوصية داخل التطبيق أيضًا، لا في صفحة المتجر وحدها
+            val ctx = LocalContext.current
+            MoreItem(Icons.Default.PrivacyTip, "سياسة الخصوصية", "لا يجمع التطبيق أي بيانات شخصية") { runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://opvoedconsult.com/shamela/privacy.html"))) } }
         }
     }
 }
@@ -106,9 +111,10 @@ fun SettingsScreen(app: App, nav: NavHostController) {
     val scope = rememberCoroutineScope()
     var url by remember { mutableStateOf(s.manifestUrl) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
+    val installedVer by app.library.installedVersion.collectAsState()
     Column(Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("الإعدادات") }, navigationIcon = { IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع") } })
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
+        Column(Modifier.imePadding().verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             SectionHeader("العرض")
             Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) { Text("المظهر:", Modifier.width(70.dp)); listOf("النظام", "فاتح", "داكن", "ورقي").forEachIndexed { i, n -> Chip(n, s.themeMode == i) { app.settings.update { it.copy(themeMode = i) } } } }
             Text("حجم خط الواجهة: ${ArabicText.arabicDigits((s.fontScale * 100).toInt())}٪", Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
@@ -122,7 +128,7 @@ fun SettingsScreen(app: App, nav: NavHostController) {
             SwitchRow("فحص التحديثات تلقائيًا (يوميًا)", s.autoUpdateCheck) { app.settings.update { it.copy(autoUpdateCheck = !it.autoUpdateCheck) } }
             SwitchRow("تخزين الكتب في الذاكرة الخارجية (إن وُجدت)", s.storageExternal) { app.settings.update { it.copy(storageExternal = !it.storageExternal) }; scope.launch { app.library.check() } }
             Text("مجلد الكتب: ${app.library.booksDir.path}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
-            Text("المساحة الحرة: ${ArabicText.formatSize(app.library.freeSpace())} · المثبَّت: ${ArabicText.formatSize(app.library.installedSize())}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
+            Text("المساحة الحرة: ${ArabicText.formatSize(app.library.freeSpace())} · المثبَّت: ${ArabicText.formatSize(remember(installedVer, s.storageExternal) { app.library.installedSize() })}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
             TextButton(onClick = { confirmDeleteAll = true }, modifier = Modifier.padding(horizontal = 8.dp)) { Text("حذف كل الكتب المثبَّتة", color = MaterialTheme.colorScheme.error) }
 
             SectionHeader("الخادم (NAS)")
@@ -175,12 +181,12 @@ fun UpdatesScreen(app: App, nav: NavHostController) {
         runCatching { app.library.fetchManifest() }
         checking = false
         runCatching { ShamelaWeb.recent() }.onSuccess { list ->
-            recent = list
+            recent = list.distinctBy { it.id }
             inIndex = list.mapNotNull { app.library.book(it.id)?.id }.toSet()
         }.onFailure { recentError = it.message }
     }
 
-    val appUpdate = manifest != null && manifest!!.appVersionCode > BuildConfig.VERSION_CODE
+    val appUpdate = !BuildConfig.PLAY_STORE && manifest != null && manifest!!.appVersionCode > BuildConfig.VERSION_CODE
     val dataUpdate = app.library.dataUpdateAvailable()
 
     Column(Modifier.fillMaxSize()) {
@@ -190,8 +196,8 @@ fun UpdatesScreen(app: App, nav: NavHostController) {
                 Card(Modifier.fillMaxWidth().padding(12.dp)) {
                     Column(Modifier.padding(14.dp)) {
                         Text("التطبيق", style = MaterialTheme.typography.titleSmall)
-                        Text("الإصدار الحالي ${BuildConfig.VERSION_NAME}" + (manifest?.let { " — على الخادم ${it.appVersionName}" } ?: ""), style = MaterialTheme.typography.bodySmall)
-                        if (appUpdate && !BuildConfig.PLAY_STORE) {
+                        Text("الإصدار الحالي ${BuildConfig.VERSION_NAME}" + (manifest?.takeIf { !BuildConfig.PLAY_STORE }?.let { " — على الخادم ${it.appVersionName}" } ?: ""), style = MaterialTheme.typography.bodySmall)
+                        if (appUpdate) {
                             manifest?.notes?.let { Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp)) }
                             Button(onClick = { (manifest?.apkPage ?: manifest?.apkUrl)?.let { runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it))) } } }, modifier = Modifier.padding(top = 8.dp)) { Text("تنزيل الإصدار الجديد") }
                         }
@@ -251,6 +257,7 @@ fun AboutScreen(app: App, nav: NavHostController) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = 8.dp)) {
             Text("المكتبة الشاملة — نسخة الأندرويد", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
             Text("تطبيق مستقل يقرأ بيانات المكتبة الشاملة (shamela.ws) من خادم NAS الخاص: الفهرس الكامل على الجهاز، والكتب تُنزَّل عند الحاجة (كتابًا كتابًا أو قسمًا كاملًا أو المكتبة كلها) وتُقرأ ويُبحث فيها دون اتصال. المستجدات تُجلب من موقع الشاملة مباشرة.", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 16.dp))
+            Text("تطبيق مستقل غير رسمي، لا يتبع مؤسسة المكتبة الشاملة ولا يمثّلها.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
             SectionHeader("الإحصائيات")
             val s = stats
             if (s != null) {
@@ -259,7 +266,7 @@ fun AboutScreen(app: App, nav: NavHostController) {
                 KeyValue("الأقسام", ArabicText.arabicDigits(s["categories"] ?: 0))
                 KeyValue("الصفحات", ArabicText.arabicDigits(s["pages"] ?: 0))
                 KeyValue("حجم المكتبة", ArabicText.formatSize(s["size"] ?: 0))
-                KeyValue("المثبَّت", "${ArabicText.arabicDigits(remember(installedVer) { app.library.installedIds().size })} كتاب — ${ArabicText.formatSize(app.library.installedSize())}")
+                KeyValue("المثبَّت", "${ArabicText.arabicDigits(remember(installedVer) { app.library.installedIds().size })} كتاب — ${ArabicText.formatSize(remember(installedVer) { app.library.installedSize() })}")
             }
             SectionHeader("الإصدار")
             KeyValue("التطبيق", "${BuildConfig.VERSION_NAME} (${ArabicText.arabicDigits(BuildConfig.VERSION_CODE)})")

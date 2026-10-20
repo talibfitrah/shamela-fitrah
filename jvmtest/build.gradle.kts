@@ -10,11 +10,11 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.json:json:20240303")
 }
-kotlin { jvmToolchain(21) }
+kotlin { jvmToolchain(17) }
 sourceSets {
     main {
         kotlin.srcDir("../android/app/src/main/java/org/murabbie/shamela/data")
-        kotlin.exclude("**/Services.kt", "**/NewBooks.kt", "**/Search.kt", "**/Settings.kt", "**/Library.kt", "**/Downloads.kt", "**/DownloadService.kt", "**/UserDb.kt")
+        kotlin.exclude("**/Services.kt", "**/NewBooks.kt", "**/Search.kt", "**/Settings.kt", "**/Library.kt", "**/Downloads.kt", "**/DownloadService.kt", "**/UserDb.kt", "**/Exporter.kt", "**/Backup.kt", "**/FileImport.kt", "**/Speaker.kt", "**/Tashkeel.kt")
     }
 }
 application { mainClass.set("WebTestKt") }

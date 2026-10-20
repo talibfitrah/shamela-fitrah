@@ -2,7 +2,7 @@
 """تحديث مكتبة NAS بالمستجدات من موقع shamela.ws:
 يقرأ قائمة «آخر الكتب المضافة» من الصفحة الرئيسة (وأي أرقام كتب تُمرَّر في سطر الأوامر)، ويجلب كل كتاب
 غير موجود في index.json صفحةً صفحة من الموقع، ويبني له قاعدة SQLite بالصيغة نفسها التي ينتجها المستخرج
-(page/title/FTS5/meta)، ثم يضم الكتب الجديدة في حزمة تحديث books-upd-YYYYMMDD.pack، ويحدّث index.json
+(page/title/FTS5/meta)، ثم يضم الكتب الجديدة في حزمة تحديث books-upd-YYYYMMDD-HHMMSS.pack، ويحدّث index.json
 و master.db و manifest.json على NAS.
 
 الاستعمال:
@@ -19,7 +19,7 @@ UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chr
 
 def fetch(url, attempts=4):
     for i in range(attempts):
-        r = subprocess.run(["curl", "-sS", "-m", "60", "-A", UA, "-H", "X-Requested-With: XMLHttpRequest", url], capture_output=True)
+        r = subprocess.run(["curl", "-sS", "-f", "-m", "60", "-A", UA, "-H", "X-Requested-With: XMLHttpRequest", url], capture_output=True)
         if r.returncode == 0 and r.stdout:
             return r.stdout.decode("utf-8", errors="replace")
         time.sleep(2 * (i + 1))
@@ -107,10 +107,7 @@ def import_book(bid, dest, log=print):
     c.execute("CREATE VIRTUAL TABLE title_fts USING fts5(text, content='', tokenize='unicode61 remove_diacritics 2')")
     pid = info["first"]; last_num = -1; part = None; count = 0
     while count < 200000:
-        try:
-            j = json.loads(fetch(f"{SITE}/ajax/pageContent/{bid}/{pid}"))
-        except Exception:
-            break
+        j = json.loads(fetch(f"{SITE}/ajax/pageContent/{bid}/{pid}"))  # الفشل يُرمى: كتاب مبتور لا يُنشر (نهاية الكتاب تُعرف من nextId أدناه)
         num = j.get("pageNum") or 0
         if (0 < num < last_num) or part is None:
             hh = fetch(f"{SITE}/book/{bid}/{pid}")
@@ -188,7 +185,8 @@ def main():
     print(f"كتب جديدة غير موجودة على NAS: {len(cands)} — {cands}")
     if not cands or dry:
         return
-    pack_name = f"books-upd-{time.strftime('%Y%m%d')}.pack"
+    stamp = time.strftime("%Y%m%d-%H%M%S")  # ختم واحد للحزمة وللإصدار: تشغيل ثانٍ في اليوم نفسه يجب أن يغيّر data.version
+    pack_name = f"books-upd-{stamp}.pack"
     pack_path = os.path.join(work, "packs", pack_name)
     if os.path.exists(pack_path):
         os.remove(pack_path)
@@ -216,7 +214,7 @@ def main():
     make_master.build(master_official, idx_path, master_out, extra_path)
     if no_upload:
         print("تم البناء محليًا بلا رفع"); return
-    version = st["data"].get("version", "").split("+")[0] + "+" + time.strftime("%Y%m%d")
+    version = st["data"].get("version", "").split("+")[0] + "+" + stamp
     sys.argv = ["publish.py", "data", work, master_out, "--version", version]
     publish.main()
     print("تم التحديث:", new_books)

@@ -205,11 +205,11 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
                             }
                             HorizontalDivider()
                         }
-                        if (expanded) items(list, key = { "h${it.bookId}-${it.pageId}-${it.snippet.hashCode()}" }) { h -> HitRow(h, hl, showBook = false) { nav.go("reader/${h.bookId}/${h.pageId}?q=${android.net.Uri.encode(query)}") } }
+                        if (expanded) items(list) { h -> HitRow(h, hl, showBook = false) { nav.go("reader/${h.bookId}/${h.pageId}?q=${android.net.Uri.encode(query)}") } }
                     }
                 }
             } else LazyColumn(Modifier.fillMaxSize(), state = listState) {
-                items(hits, key = { "h${it.bookId}-${it.pageId}-${it.snippet.hashCode()}" }) { h -> HitRow(h, hl, showBook = true) { nav.go("reader/${h.bookId}/${h.pageId}?q=${android.net.Uri.encode(query)}") } }
+                items(hits) { h -> HitRow(h, hl, showBook = true) { nav.go("reader/${h.bookId}/${h.pageId}?q=${android.net.Uri.encode(query)}") } }
             }
         }
     }

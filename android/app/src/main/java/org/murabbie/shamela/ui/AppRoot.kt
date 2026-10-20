@@ -1,5 +1,8 @@
 package org.murabbie.shamela.ui
 
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmarks
@@ -11,6 +14,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -84,6 +88,8 @@ fun AppRoot(app: App, pendingOpen: MutableState<String?>) {
     val showBar = tabs.any { it.route == currentRoute }
 
     Scaffold(
+        // الحافة العليا يملكها TopAppBar في كل شاشة؛ وإلا تضاعف هامش شريط الحالة
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         bottomBar = {
             if (showBar) NavigationBar {
                 for (t in tabs) NavigationBarItem(
@@ -101,7 +107,7 @@ fun AppRoot(app: App, pendingOpen: MutableState<String?>) {
             }
         }
     ) { padding ->
-        NavHost(nav, startDestination = "library", modifier = Modifier.padding(padding)) {
+        NavHost(nav, startDestination = "library", modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
             composable("library") { LibraryScreen(app, nav) }
             composable("search") { SearchScreen(app, nav, null, null) }
             composable("search/{book}?q={q}", arguments = listOf(navArgument("book") { type = NavType.IntType }, navArgument("q") { defaultValue = "" })) {

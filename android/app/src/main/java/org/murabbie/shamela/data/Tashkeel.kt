@@ -40,14 +40,14 @@ class Tashkeel(private val library: Library) {
             val tmp = File(library.tmpDir, "tashkeel.db.tmp")
             GZIPInputStream(gz.inputStream().buffered(1 shl 16)).use { i -> tmp.outputStream().use { o -> i.copyTo(o, 1 shl 16) } }
             closeDb()
-            if (file.exists()) file.delete()
             if (!tmp.renameTo(file)) { tmp.copyTo(file, true); tmp.delete() }
             gz.delete()
             cache.clear()
             _state.value = ServicesState.Ready
             true
         } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
+            // مغادرة الشاشة تلغي التنزيل: تُعاد الحالة وإلا بقيت «جارٍ التنزيل» بلا زر إعادة
+            if (e is kotlinx.coroutines.CancellationException) { _state.value = if (file.exists() && file.length() > 0) ServicesState.Ready else ServicesState.NotInstalled; throw e }
             _state.value = if (file.exists() && file.length() > 0) ServicesState.Ready else ServicesState.Error(e.message ?: "خطأ")
             false
         }

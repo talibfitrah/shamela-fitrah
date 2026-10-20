@@ -481,7 +481,7 @@ private fun VoiceSheet(app: App, onDismiss: () -> Unit) {
                     }, enabled = settings.cloudTtsKey.isNotBlank()) { Text("جرّب الصوت السحابي") }
                 }
                 if (cloudErr.isNotBlank()) Text(cloudErr, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                Text("المفتاح المجاني: حساب Azure ← إنشاء مورد Speech ← انسخ المفتاح والمنطقة (الطبقة المجانية ٥٠٠ ألف حرف شهريًّا). يُحفظ على جهازك فقط، وما قُرئ مرة يُخزَّن فلا يُستهلك مرتين.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+                Text("المفتاح المجاني: حساب Azure ← إنشاء مورد Speech ← انسخ المفتاح والمنطقة (الطبقة المجانية ٥٠٠ ألف حرف شهريًّا). يُرسَل نص الصفحة المقروءة إلى خادم Microsoft ليُحوَّل صوتًا، والمفتاح يُحفظ على جهازك فقط، وما قُرئ مرة يُخزَّن فلا يُستهلك مرتين.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
                 androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 8.dp))
             }
             Text("أو صوت الجهاز: الأصوات الرجالية تُعرض أولًا. اضغط ▶ لسماع عيّنة. خفض «غِلَظ الصوت» يجعل النطق أعمق. الأصوات «عبر الشبكة» أعلى جودة.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))

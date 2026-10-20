@@ -105,7 +105,7 @@ class Backup(private val context: Context, private val library: Library, private
     /** استعادة كتاب من المجلد إلى مخزن التطبيق (دون شبكة). */
     suspend fun restoreBook(id: Int): Boolean = withContext(Dispatchers.IO) {
         if (!available()) return@withContext false
-        val f = index()["$id.db.gz"] ?: index(refresh = true)["$id.db.gz"] ?: return@withContext false
+        val f = index()["$id.db.gz"] ?: return@withContext false
         try {
             val tmp = File(library.tmpDir, "restore-$id.db")
             context.contentResolver.openInputStream(f.uri)?.use { ins ->

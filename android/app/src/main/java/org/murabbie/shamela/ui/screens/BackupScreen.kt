@@ -38,7 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.murabbie.shamela.App
 import org.murabbie.shamela.data.ArabicText
 
@@ -61,18 +64,18 @@ fun BackupScreen(app: App, nav: NavHostController) {
     var result by remember { mutableStateOf("") }
     var job by remember { mutableStateOf<Job?>(null) }
     var confirmOff by remember { mutableStateOf(false) }
+    var refreshJob by remember { mutableStateOf<Job?>(null) }
 
     fun refresh() {
-        scope.launch {
-            available = app.backup.available()
-            folderName = app.backup.folderName()
-            if (available) {
-                val list = app.backup.listBackedUp()
-                backedUp = list.size
-                backedBytes = list.values.sum()
-                val installed = app.library.installedIds()
-                restorable = list.keys.count { it !in installed }
-            } else { backedUp = 0; backedBytes = 0; restorable = 0 }
+        refreshJob?.cancel()  // كل كتاب يُنزَّل يطلب تحديثًا: لا تتراكم الفحوص
+        refreshJob = scope.launch {
+            delay(300)  // تحديثات متتابعة (كتاب بعد كتاب) تُدمج في فحص واحد
+            // فحص المجلد استعلام لكل ملف: خارج الخيط الرئيسي وإلا تجمّدت الشاشة مع المجلدات الكبيرة
+            val a = withContext(Dispatchers.IO) { app.backup.available() }
+            folderName = withContext(Dispatchers.IO) { app.backup.folderName() }
+            val list = if (a) withContext(Dispatchers.IO) { app.backup.listBackedUp() } else emptyMap()
+            val installed = if (a) withContext(Dispatchers.IO) { app.library.installedIds() } else emptySet()
+            available = a; backedUp = list.size; backedBytes = list.values.sum(); restorable = list.keys.count { it !in installed }
         }
     }
     LaunchedEffect(settings.backupUri, installedVer) { refresh() }

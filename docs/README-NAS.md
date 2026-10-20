@@ -10,10 +10,10 @@
 | `master.db.gz` | فهرس المكتبة (الأقسام ٤١، المؤلفون ٣٬١٨٨، الكتب ٨٬٥٩٣ + مواضع ملفات الكتب في الحزم) — يُنزَّل عند أول فتح (نحو ٣ م.ب) |
 | `index.json` | فهرس الحزم: لكل كتاب اسم الحزمة والإزاحة والطول والحجم والبصمة وعدد الصفحات |
 | `books.pack` | **ملف الكتب الموحَّد** (٨٫٩ غ.ب): كل كتاب قاعدة SQLite مضغوطة gzip مستقلة داخل هذا الملف الواحد، يُنزَّل بطلب مدى (HTTP Range) دون تنزيل الملف كله |
-| `books-upd-YYYYMMDD.pack` | حزم التحديث التي يُنشئها سكربت المستجدات |
+| `books-upd-YYYYMMDD-HHMMSS.pack` | حزم التحديث التي يُنشئها سكربت المستجدات |
 | `shamela-<الإصدار>-universal.apk` | التطبيق (يعمل على كل المعالجات) — وهذا الملف الذي يُنشر للناس |
 | `shamela-<الإصدار>-arm64.apk` / `-arm32.apk` | نسخ أصغر لمعالج بعينه |
-| `shamela-android-project.tar.gz` | المشروع المصدري الكامل (Kotlin/Compose) + المستخرج (Java/Lucene) + السكربتات |
+| `shamela-android-project.tar.gz` | لقطة للقراءة فقط من مجلد `android/` (Kotlin/Compose) عند الـ commit المنشور، يولّدها `publish.py app` من GitHub. المصدر الكامل (المستخرج والسكربتات) في https://github.com/talibfitrah/shamela-fitrah |
 | `tools/` | السكربتات: `zipfetch.py`، `make_master.py`، `publish.py`، `update_from_web.py`، `shamela_common.py`، والمستخرج `shamela-extractor-1.0.jar` |
 | `publish_state.json` | حالة النشر (روابط المشاركة وبصمات الملفات) — يعتمد عليه سكربت التحديث |
 | `SHA256SUMS.txt` | بصمات التحقق |
@@ -56,7 +56,7 @@ cd tools
 python3 update_from_web.py work            # يجلب الكتب الجديدة من قائمة المستجدات
 python3 update_from_web.py work --ids 30250,30251   # كتب بأرقامها
 ```
-يحتاج المجلد `work/` إلى `master-official.db` (نسخة `master.db` الرسمية من الحزمة). يُنشئ حزمة `books-upd-YYYYMMDD.pack`، ويحدّث `index.json` و`master.db.gz` و`manifest.json` على NAS، فتظهر الكتب الجديدة في التطبيق بعد «تحديث الفهرس».
+يحتاج المجلد `work/` إلى `master-official.db` (نسخة `master.db` الرسمية من الحزمة). يُنشئ حزمة `books-upd-YYYYMMDD-HHMMSS.pack`، ويحدّث `index.json` و`master.db.gz` و`manifest.json` على NAS، فتظهر الكتب الجديدة في التطبيق بعد «تحديث الفهرس».
 
 ## إعادة البناء من حزمة رسمية جديدة
 

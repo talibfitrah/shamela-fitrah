@@ -188,7 +188,8 @@ fun BookScreen(app: App, nav: NavHostController, id: Int) {
                 if (installed) SectionHeader("فهرس الموضوعات" + if (titles.isNotEmpty()) " (${ArabicText.arabicDigits(titles.size)})" else "")
             }
             if (installed) {
-                val visible = titles.filter { t -> !isHiddenByCollapse(t, titles, collapsed) }
+                val byId = if (collapsed.isEmpty()) emptyMap() else titles.associateBy { it.id }
+                val visible = titles.filter { t -> !isHiddenByCollapse(t, byId, collapsed) }
                 items(visible, key = { it.id }) { t ->
                     TocRow(t, collapsed = t.id in collapsed, onToggle = { collapsed = if (t.id in collapsed) collapsed - t.id else collapsed + t.id }) { nav.go("reader/$id/${t.page}") }
                 }
@@ -204,11 +205,10 @@ fun BookScreen(app: App, nav: NavHostController, id: Int) {
     )
 }
 
-private fun isHiddenByCollapse(t: Title, all: List<Title>, collapsed: Set<Int>): Boolean {
+private fun isHiddenByCollapse(t: Title, byId: Map<Int, Title>, collapsed: Set<Int>): Boolean {
     if (collapsed.isEmpty()) return false
     var p = t.parent
     var guard = 0
-    val byId = all.associateBy { it.id }
     while (p != 0 && guard++ < 30) {
         if (p in collapsed) return true
         p = byId[p]?.parent ?: 0

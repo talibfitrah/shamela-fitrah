@@ -6,16 +6,55 @@
   publish.py data <outdir> <master.db> [--version 1448-1]
                                        رفع master.db.gz و index.json والحزم packs/*.pack وإنشاء روابطها
   publish.py app <apk-dir> <version_code> <version_name> [--notes "..."]
-                                       رفع ملفات APK وتحديث قسم app في manifest
-  publish.py file <local> [remote-name] رفع ملف عادي (README، المشروع المصدري…) وإنشاء رابط له
+                                       رفع ملفات APK (من commit نظيف في origin/main، بالـ versionCode نفسه)
+                                       ومصدر android/ عند ذلك الـ commit، وتحديث قسم app في manifest
+  publish.py file <local> [remote-name] رفع ملف عادي (README…) وإنشاء رابط له
   publish.py manifest                  إعادة توليد manifest.json من الحالة المحفوظة ورفعه
 الحالة تُحفظ في publish_state.json (محليًا وعلى NAS).
 """
-import gzip, json, os, shutil, sys, time
+import glob, gzip, json, os, re, shutil, subprocess, sys, tempfile, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shamela_common import Nas, NAS_DIR, NAS_BASE, sha256_file
 
 STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "publish_state.json")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def git(*a):
+    r = subprocess.run(["git", "-C", ROOT, *a], capture_output=True, text=True)
+    if r.returncode:
+        raise SystemExit(f"رفض: git {' '.join(a)} فشل — {r.stderr.strip()}")
+    return r.stdout
+
+def apk_version(apk):
+    """versionCode من APK عبر aapt2 من أحدث build-tools في Android SDK (جهازا النشر: macOS وLinux)"""
+    sdks = [os.environ.get("ANDROID_HOME"), os.environ.get("ANDROID_SDK_ROOT"), "~/Library/Android/sdk", "~/.local/android-sdk"]
+    found = [p for s in sdks if s for p in glob.glob(os.path.join(os.path.expanduser(s), "build-tools", "*", "aapt2"))]
+    if not found:
+        raise SystemExit("رفض: aapt2 غير موجود (build-tools في Android SDK) — لا يمكن التحقق من versionCode في ملفات APK. اضبط ANDROID_HOME.")
+    aapt2 = max(found, key=lambda p: [int(x) for x in re.findall(r"\d+", os.path.basename(os.path.dirname(p)))])
+    m = re.search(r"versionCode='(\d+)'", subprocess.run([aapt2, "dump", "badging", apk], capture_output=True, text=True).stdout)
+    return m and int(m[1])
+
+def require_release(st, code, apk_dir):
+    """publish.py app: لا يُنشر إلا commit نظيف مدفوع إلى GitHub يطابق versionCode، وملفات APK منه — كي لا يتفرّع كود NAS عن GitHub مرة أخرى. يعيد sha الـ commit"""
+    dirty = git("status", "--porcelain", "--untracked-files=all", "--", ".", ":!tools/manifest.json")  # manifest.json ناتج كل نشر (يُعاد توليده)، لا مصدر
+    if dirty:
+        raise SystemExit("رفض: شجرة git فيها تغييرات غير ملتزَمة — التزم بها وادفعها إلى GitHub قبل النشر:\n" + dirty)
+    git("fetch", "-q", "origin")  # مراجع البعيد المحلية قد تكون قديمة
+    if subprocess.run(["git", "-C", ROOT, "merge-base", "--is-ancestor", "HEAD", "origin/main"]).returncode:
+        raise SystemExit("رفض: HEAD غير مدفوع إلى origin/main على GitHub — ادمجه في main وادفعه أولًا (النشر من main فقط).")
+    vc = re.search(r"versionCode\s*=\s*(\d+)", git("show", "HEAD:android/app/build.gradle.kts"))
+    if not vc or int(vc[1]) != code:
+        raise SystemExit(f"رفض: versionCode عند HEAD في android/app/build.gradle.kts هو {vc and vc[1]} لا {code} — التطبيق يقارن بينهما.")
+    prev = st.get("app", {}).get("version_code", 0)
+    if code <= prev:
+        raise SystemExit(f"رفض: الإصدار {code} ليس أحدث من المنشور على NAS ({prev}). إن رفع تشغيلٌ سابق لـ app ملفات APK ثم فشل قبل نشر manifest فأعد نشره بـ: python3 tools/publish.py manifest")
+    for f in sorted(os.listdir(apk_dir)):
+        if f.endswith(".apk") and "unsigned" in f:
+            raise SystemExit(f"رفض: {f} غير موقَّع (keystore.properties مفقود عند البناء) — لن يُثبَّت فوق النسخ المنشورة.")
+        if f.endswith(".apk") and (v := apk_version(os.path.join(apk_dir, f))) != code:
+            raise SystemExit(f"رفض: versionCode في {f} هو {v} لا {code} — ملفات APK من بناء آخر، أعد البناء من HEAD.")
+    return git("rev-parse", "HEAD").strip()
 
 def load_state():
     if os.path.exists(STATE):
@@ -35,14 +74,15 @@ def upload_and_share(nas, st, local, name=None, force=False):
             print(f"  {name} غير موجود محليًا لكنه على NAS بالحجم المسجَّل — يُعاد استعماله")
             return prev
         raise FileNotFoundError(local)
-    size = os.path.getsize(local)
-    if existing != size or force:
+    size = os.path.getsize(local); sha = sha256_file(local)
+    # الحجم نفسه لا يعني المحتوى نفسه: يُعاد الرفع إن اختلفت البصمة المسجَّلة (أو لم تُسجَّل)
+    if existing != size or force or (st["files"].get(name) or {}).get("sha256") != sha:
         print(f"  رفع {name} ({size/1e6:.1f} MB)…", flush=True)
         nas.upload(local, st["dir"], name)
     else:
         print(f"  {name} موجود بالحجم نفسه — تخطٍّ", flush=True)
     link = nas.share(remote)
-    st["files"][name] = {"size": size, "sha256": sha256_file(local), "url": link["url"], "page": link["page"], "id": link["id"], "updated": time.strftime("%Y-%m-%d")}
+    st["files"][name] = {"size": size, "sha256": sha, "url": link["url"], "page": link["page"], "id": link["id"], "updated": time.strftime("%Y-%m-%d")}
     save_state(st)
     return st["files"][name]
 
@@ -58,16 +98,25 @@ def build_manifest(st):
             "index": (st["files"].get("index.json") or {}) | {"path": f"{d}/index.json"} if "index.json" in st["files"] else None,
             "packs": packs,
             "services": (st["files"].get("services.db.gz") or {}) | {"raw_size": st["data"].get("services_raw_size", 0), "path": f"{d}/services.db.gz"} if "services.db.gz" in st["files"] else None,
+            # معجم التشكيل (Tashkeel.kt يقرأ data.tashkeel)؛ إسقاطه من manifest يعطّل تنزيله في كل التطبيقات
+            "tashkeel": (st["files"].get("tashkeel.db.gz") or {}) | {"raw_size": st["data"].get("tashkeel_raw_size", 0), "path": f"{d}/tashkeel.db.gz"} if "tashkeel.db.gz" in st["files"] else None,
         },
         "site": {"recent": "https://shamela.ws", "book": "https://shamela.ws/book/{id}"},
         "folder": f"{NAS_BASE}/sharing/ehniFEwJg",
     }
-    for f in ("master", "index", "services"):
+    for f in ("master", "index", "services", "tashkeel"):
         if m["data"][f]:
             m["data"][f] = {k: v for k, v in m["data"][f].items() if k in ("url", "page", "path", "size", "sha256", "raw_size")}
     return m
 
-def push_manifest(nas, st):
+def require_data(st):
+    """يرفض نشر manifest بلا كتب: حالة فارغة (publish_state.json مفقود) تُفقد كل التطبيقات المثبَّتة books.pack"""
+    if not st["packs"] or "master.db.gz" not in st["files"]:
+        raise SystemExit("رفض: الحالة المحلية بلا packs أو master.db.gz — publish_state.json مفقود أو ناقص. انسخه من NAS إلى tools/ قبل النشر (نشر manifest فارغ يعطّل كل التطبيقات المثبَّتة).")
+
+def push_manifest(nas, st, empty_ok=False):
+    if not empty_ok:
+        require_data(st)
     m = build_manifest(st)
     local = os.path.join(os.path.dirname(STATE), "manifest.json")
     json.dump(m, open(local, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
@@ -83,20 +132,49 @@ def main():
     a = sys.argv[1:]
     if not a:
         print(__doc__); return
-    nas = Nas(); nas.login()
     st = load_state()
     cmd = a[0]
+    if cmd == "app":
+        head = require_release(st, int(a[2]), a[1])  # قبل الدخول إلى NAS وقبل أي رفع
+    nas = Nas(); nas.login()
+    if cmd in ("app", "services", "manifest"):
+        require_data(st)  # قبل أي رفع: لا يُستبدل APK أو services.db.gz ثم يُرفض manifest
+    if cmd in ("app", "services", "manifest", "file") or (cmd == "data" and os.path.exists(STATE)):  # file يرفع الحالة بعده: بلا حالة محلية يُرفض لا يمحو نسخة NAS
+        # الحالة المحلية قد تكون قديمة (هكذا تفرّع الكود): كل ما يُبنى منه manifest يجب أن يطابق نسخة NAS قبل أي رفع — قراءة فقط
+        r = json.loads(nas._curl(["-G", f"{nas.base}/entry.cgi", "--data-urlencode", "api=SYNO.FileStation.Download", "--data-urlencode", "version=2", "--data-urlencode", "method=download",
+                                  "--data-urlencode", "mode=download", "--data-urlencode", f"path={json.dumps([st['dir'] + '/publish_state.json'])}", "--data-urlencode", f"_sid={nas.sid}"]))
+        if "app" not in r:
+            raise SystemExit(f"رفض: تعذّرت قراءة publish_state.json من NAS — {r}")
+        inputs = lambda s: (s.get("app", {}) if cmd == "app" else None, s.get("packs"), s.get("data"), {k: s.get("files", {}).get(k) for k in ("master.db.gz", "index.json", "services.db.gz", "tashkeel.db.gz")})  # مدخلات build_manifest
+        if inputs(r) != inputs(st):
+            raise SystemExit(f"رفض: publish_state.json المحلي لا يطابق نسخة NAS في app أو الحزم أو ملفات manifest (على NAS الإصدار {r['app'].get('version_code')}، محليًا {st.get('app', {}).get('version_code')}) — انسخه من NAS إلى tools/ ثم أعد.")
+        if st.get("app", {}).get("version_code", 0) < r["app"].get("version_code", 0):  # غير app: يُسمح بالأحدث محليًا (استئناف app فشل قبل manifest) لا بالأقدم
+            raise SystemExit(f"رفض: إصدار التطبيق في الحالة المحلية ({st.get('app', {}).get('version_code')}) أقدم من المنشور على NAS ({r['app'].get('version_code')}) — النشر يعيد الأجهزة إلى إصدار أقدم. انسخ publish_state.json من NAS إلى tools/ ثم أعد.")
+    if cmd == "data" and not os.path.exists(STATE) and "manifest.json" in nas.list(st["dir"]):
+        raise SystemExit("رفض: publish_state.json مفقود وعلى NAS manifest منشور — النشر الآن يمحو app وservices من manifest. انسخ الحالة من NAS أولًا.")
     if cmd == "init":
         nas.mkdir(st["dir"])
         if "manifest_url" not in st:
             local = os.path.join(os.path.dirname(STATE), "manifest.json")
             if not os.path.exists(local):
                 json.dump({"format": "shamela-nas-manifest", "version": 1, "app": {}, "data": {}}, open(local, "w"))
-        push_manifest(nas, st)
+        if "manifest.json" in nas.list(st["dir"]):
+            raise SystemExit("رفض: على NAS manifest منشور — init لمجلد جديد فقط؛ لإعادة نشر manifest: publish.py manifest")
+        push_manifest(nas, st, empty_ok=True)  # مجلد جديد: manifest فارغ مسموح
     elif cmd == "data":
         outdir, master = a[1], a[2]
         version = a[a.index("--version") + 1] if "--version" in a else time.strftime("%Y%m%d")
         idx = json.load(open(os.path.join(outdir, "index.json"), encoding="utf-8"))
+        # قبل أي رفع: حزمة محلية تالفة بالحجم نفسه كانت ستستبدل السليمة على NAS ثم يُرفض النشر
+        remote = nas.list(st["dir"])
+        for p in idx["packs"]:
+            lp = os.path.join(outdir, "packs", p["file"])
+            prev = st["files"].get(p["file"])
+            if os.path.exists(lp):
+                if sha256_file(lp) != p["sha256"]:
+                    raise SystemExit(f"بصمة الحزمة {p['file']} لا تطابق index.json — لم يُرفع شيء")
+            elif not prev or prev.get("sha256") != p["sha256"] or remote.get(p["file"]) != prev.get("size"):
+                raise SystemExit(f"الحزمة {p['file']} غير موجودة محليًا ولا مطابقة على NAS — لم يُرفع شيء")
         gz = master + ".gz"
         with open(master, "rb") as i, gzip.open(gz, "wb", compresslevel=9) as o:
             shutil.copyfileobj(i, o)
@@ -119,7 +197,12 @@ def main():
             if f.endswith(".apk"):
                 apks[f] = upload_and_share(nas, st, os.path.join(apk_dir, f), f)
         uni = next((v for k, v in apks.items() if "universal" in k), None) or next(iter(apks.values()))
-        st["app"] = {"version_code": code, "version_name": name, "apk": uni["url"], "apk_page": uni["page"], "notes": notes,
+        # مصدر android/ عند الـ commit نفسه (محتواه في الجذر بلا بادئة android/ كالأرشيف السابق) — في st["files"] لا في manifest
+        with tempfile.TemporaryDirectory() as t:
+            src = os.path.join(t, "shamela-android-project.tar.gz")
+            git("archive", "--format=tar.gz", "-o", src, f"{head}:android")
+            upload_and_share(nas, st, src)
+        st["app"] = {"version_code": code, "version_name": name, "commit": head, "apk": uni["url"], "apk_page": uni["page"], "notes": notes,
                      "apks": {k: {"url": v["url"], "page": v["page"], "size": v["size"], "sha256": v["sha256"]} for k, v in apks.items()}}
         save_state(st)
         push_manifest(nas, st)
@@ -132,6 +215,7 @@ def main():
         save_state(st); push_manifest(nas, st)
     elif cmd == "file":
         info = upload_and_share(nas, st, a[1], a[2] if len(a) > 2 else None, force=True)
+        nas.upload(STATE, st["dir"], "publish_state.json")  # الحالة على NAS تتبع الملف المرفوع، وإلا رُفض نشر manifest التالي
         print(info["url"]); print(info["page"])
     elif cmd == "manifest":
         push_manifest(nas, st)

@@ -90,6 +90,8 @@ class Speaker(private val context: Context) {
 
     /** توليد مقطع صوتي (مع خزن) — يعيد ملف MP3 */
     private suspend fun synth(c: CloudTts, text: String): File = withContext(Dispatchers.IO) {
+        // المنطقة تُدرج في اسم الخادم: غير الحروف والأرقام قد يرسل المفتاح إلى خادم آخر
+        require(c.region.matches(Regex("[A-Za-z0-9]+"))) { "اسم المنطقة غير صالح: «${c.region}» — مثل westeurope" }
         val h = MessageDigest.getInstance("MD5").digest((c.voice + "|" + text).toByteArray()).joinToString("") { "%02x".format(it) }
         val f = File(cacheDir, "$h.mp3")
         if (f.exists() && f.length() > 0) return@withContext f

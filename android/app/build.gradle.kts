@@ -13,14 +13,14 @@ val keystoreProps = Properties().apply {
 
 android {
     namespace = "org.murabbie.shamela"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "org.murabbie.shamela"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 20
-        versionName = "1.5.0"
+        targetSdk = 36
+        versionCode = 21
+        versionName = "1.5.1"
         vectorDrawables.useSupportLibrary = true
         // رابط manifest الدائم على NAS (احتياطي إن تعذّرت الواجهة الموثَّقة)
         buildConfigField("String", "DEFAULT_MANIFEST_URL", "\"${project.findProperty("manifestUrl") ?: "https://files.murabbie.org/fsdownload/FnGtHqpG9/manifest.json"}\"")
@@ -57,7 +57,8 @@ android {
 
     splits {
         abi {
-            isEnable = true
+            // حزمة AAB تقسّم المعماريات بنفسها؛ تفعيل splits معها يُفشل مهمة bundle
+            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
             reset()
             include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = true

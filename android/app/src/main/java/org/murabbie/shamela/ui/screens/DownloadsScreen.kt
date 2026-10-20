@@ -51,18 +51,19 @@ fun DownloadsScreen(app: App, nav: NavHostController) {
     val scope = rememberCoroutineScope()
     val list = jobs.values.sortedBy { it.order }
     var confirmAll by remember { mutableStateOf(false) }
-    val busy = bulk.pendingTotal > 0
+    val busy = bulk.pendingTotal > 0 && !bulk.isPaused
+    val installedVer by app.library.installedVersion.collectAsState()
     Column(Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("التنزيلات") }, actions = {
             if (bulk.done > 0) TextButton(onClick = { app.downloads.clearFinished() }) { Text("مسح المكتمل") }
             if (busy) TextButton(onClick = { app.downloads.pauseAll() }) { Text("إيقاف مؤقت") }
-            else if (bulk.paused > 0 || bulk.error > 0) TextButton(onClick = { app.downloads.resumeAll() }) { Text("استئناف الكل") }
+            else if (bulk.isPaused || bulk.paused > 0 || bulk.error > 0) TextButton(onClick = { app.downloads.resumeAll() }) { Text("استئناف الكل") }
         })
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("المساحة الحرة: ${ArabicText.formatSize(app.library.freeSpace())} · المثبَّت: ${ArabicText.formatSize(app.library.installedSize())}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            Text("المساحة الحرة: ${ArabicText.formatSize(app.library.freeSpace())} · المثبَّت: ${ArabicText.formatSize(remember(installedVer) { app.library.installedSize() })}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             TextButton(onClick = { confirmAll = true }) { Text("تنزيل المكتبة كاملة") }
         }
-        if (busy || bulk.done > 0 || bulk.error > 0) Text(
+        if (bulk.pendingTotal > 0 || bulk.done > 0 || bulk.error > 0) Text(
             buildString {
                 if (bulk.pendingTotal > 0) append("في الطابور: ${ArabicText.arabicDigits(bulk.pendingTotal)}")
                 if (bulk.done > 0) { if (isNotEmpty()) append(" · "); append("تمّ: ${ArabicText.arabicDigits(bulk.done)}") }
@@ -72,7 +73,6 @@ fun DownloadsScreen(app: App, nav: NavHostController) {
         )
         // مستجدات الموقع (shamela.ws/#recent وما بعده): تنزيل خاص
         val scan by app.newBooks.scan.collectAsState()
-        val installedVer by app.library.installedVersion.collectAsState()
         val installedIds = remember(installedVer) { app.library.installedIds() }
         val fresh = remember(scan, installedIds) { scan?.books?.filter { it.id !in installedIds } ?: emptyList() }
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
