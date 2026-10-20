@@ -1,0 +1,117 @@
+.gitignore
+  s_ea966bcbc97229::t_6041eb5337d596 20-22
+android/app/src/main/java/org/murabbie/shamela/ui/AppRoot.kt
+  s_09d4e5be1e0d59::t_bbc194d7544edc 3-5,17,89-90,108
+android/app/src/main/java/org/murabbie/shamela/data/Downloads.kt
+  s_b17ee554853255::t_960eedebb65861 81,221
+  s_09d4e5be1e0d59::t_bbc194d7544edc 148
+  s_b17ee554853255::t_d6d26ccba2349f 10,14-15,38,83-86,88,90,103-104,123,143-146,149-152,154,161-163,165,177,184-186,188,219,244,253,255,261,278,283,288,292,295-297,299,306,318-320,326-327
+  s_09d4e5be1e0d59::t_93c724a15750c6 91,181
+  s_b17ee554853255::t_e39d3fdd33bb52 142,147
+  s_09d4e5be1e0d59::t_a9fec8e5c12119 182
+android/app/src/main/java/org/murabbie/shamela/data/ShamelaWeb.kt
+  s_b17ee554853255::t_e39d3fdd33bb52 132
+  s_b17ee554853255::t_a733ac92ff85bd 131
+android/app/src/main/res/xml/file_paths.xml
+  s_b17ee554853255::t_fb3ad9716a85ea 3-5
+android/app/src/main/java/org/murabbie/shamela/ui/screens/SetupScreen.kt
+  s_b17ee554853255::t_e39d3fdd33bb52 10,51,89-90,94
+android/app/src/main/java/org/murabbie/shamela/ui/screens/MoreScreens.kt
+  s_b17ee554853255::t_960eedebb65861 12,113
+  s_ea966bcbc97229::t_f84f7c9114c766 24
+  s_b17ee554853255::t_8f6dd9cd3b389f 110,127,256,265
+  s_ea966bcbc97229::t_382a43100b9434 86-88
+  s_b17ee554853255::t_9632e0334442f1 76,180,185,195-196
+android/app/src/main/java/org/murabbie/shamela/data/NasHttp.kt
+  s_b17ee554853255::t_e341b6e035d9e2 35,38-39
+android/app/src/main/java/org/murabbie/shamela/ui/screens/DownloadsScreen.kt
+  s_b17ee554853255::t_58d75b3a8ac5a5 54
+  s_b17ee554853255::t_b26db9ba888ab2 55,60,63
+  s_b17ee554853255::t_e39d3fdd33bb52 66
+android/app/src/main/java/org/murabbie/shamela/data/Library.kt
+  s_b17ee554853255::t_960eedebb65861 113
+jvmtest/build.gradle.kts
+  s_b17ee554853255::t_cbf729cf6ca85e 17
+  s_b17ee554853255::t_91f4d2a4ea0143 13
+android/build.gradle.kts
+  s_b17ee554853255::t_79f07892ffdc0f 2
+android/app/build.gradle.kts
+  s_b17ee554853255::t_35c9dec4ef7223 22-23
+  s_b17ee554853255::t_79f07892ffdc0f 16,21
+  s_b17ee554853255::t_e39d3fdd33bb52 60-61
+android/app/src/main/assets/manifest.json
+  s_b17ee554853255::t_fb3ad9716a85ea 4,6-10,12-16,18-22,24-28
+android/app/src/play/AndroidManifest.xml
+  s_b17ee554853255::t_fb3ad9716a85ea 6-7
+android/app/src/main/java/org/murabbie/shamela/ui/screens/LibraryScreens.kt
+  s_b17ee554853255::t_9632e0334442f1 65
+tools/publish.py
+  s_b17ee554853255::t_6fa827c50a1ab1 38-40
+  s_b17ee554853255::t_85ba5d2eea1a68 107-108
+  s_b17ee554853255::t_c5f98d3371543e 71-78
+  s_b17ee554853255::t_e39d3fdd33bb52 114,117-122
+  s_b17ee554853255::t_960eedebb65861 113,115-116
+  s_09d4e5be1e0d59::t_bbc194d7544edc 99-100
+  s_b17ee554853255::t_d610f183bdd1de 97-98
+  s_b17ee554853255::t_880dd292debb3f 46
+README-DEVELOPER.md
+  s_ea966bcbc97229::t_1bbc4966eb7392 121
+  s_b17ee554853255::t_f86c4e8135a989 53,131
+  s_b17ee554853255::t_8e40946f389986 45
+  s_09d4e5be1e0d59::t_426077473760aa 3,63
+  s_ea966bcbc97229::t_d92484d845a2f5 117
+tools/update_from_web.py
+  s_b17ee554853255::t_bcf3935a95806f 5,22,110
+  s_09d4e5be1e0d59::t_bbc194d7544edc 188-189,217
+android/app/src/main/java/org/murabbie/shamela/ui/screens/BookScreen.kt
+  s_b17ee554853255::t_b5225c75ca24e5 186-187,203
+android/app/src/main/java/org/murabbie/shamela/ui/MainActivity.kt
+  s_b17ee554853255::t_960eedebb65861 5,10-11,14-16,21,42-47,49
+  s_b17ee554853255::t_e341b6e035d9e2 33,62
+  s_b17ee554853255::t_e39d3fdd33bb52 32
+android/app/src/main/java/org/murabbie/shamela/ui/screens/SearchScreen.kt
+  s_b17ee554853255::t_9632e0334442f1 176,180
+play-store/data-safety.md
+  s_b17ee554853255::t_f86c4e8135a989 4
+play-store/privacy-policy.md
+  s_b17ee554853255::t_f86c4e8135a989 14,18
+  s_ea966bcbc97229::t_0e270d6422fb78 1,3-5
+android/app/src/main/java/org/murabbie/shamela/data/DownloadService.kt
+  s_b17ee554853255::t_960eedebb65861 30,37,45
+  s_b17ee554853255::t_58d75b3a8ac5a5 36,50-51
+  s_b17ee554853255::t_f9494f22c3299e 52
+play-store/listing.md
+  s_ea966bcbc97229::t_c80cdaf01f38aa 4-6,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "433b145df7327a3ac7b03a1abc215c7709ed711e",
+  "prompts": {},
+  "sessions": {
+    "s_09d4e5be1e0d59": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "efd8be62-0e28-42c3-a6b0-889ce63c580d",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    },
+    "s_b17ee554853255": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee31bef5-ec25-427e-a2dc-f1bea3d83b5a",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    },
+    "s_ea966bcbc97229": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "adf7d863-b741-4166-9a52-d8bc3a10f102",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    }
+  }
+}
