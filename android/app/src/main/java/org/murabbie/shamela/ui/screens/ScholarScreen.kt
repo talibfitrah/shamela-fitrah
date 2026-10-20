@@ -84,14 +84,17 @@ fun ScholarScreen(app: App, nav: NavHostController, key: String) {
     var own by remember { mutableStateOf<List<Book>?>(null) }
     var fresh by remember { mutableStateOf<List<Book>>(emptyList()) }
     var about by remember { mutableStateOf<List<Book>>(emptyList()) }
-    var q by remember { mutableStateOf("") }
-    var tab by remember { mutableStateOf(0) }   // 0 مؤلفاته، 1 حوله
+    val (smem, qState, listState) = rememberListMemory("scholar-$key")
+    var q by qState
+    var tab by remember { mutableStateOf(smem.tab) }   // 0 مؤلفاته، 1 حوله
+    androidx.compose.runtime.DisposableEffect(key) { onDispose { smem.tab = tab } }
     var confirmAll by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf<Book?>(null) }
     val jobs by app.downloads.jobs.collectAsState()
     val queued by app.downloads.queued.collectAsState()
     val installedVer by app.library.installedVersion.collectAsState()
     val installed = remember(installedVer) { app.library.installedIds() }
+    val backed by app.backup.backedIds.collectAsState()
     val scan by app.newBooks.scan.collectAsState()
 
     LaunchedEffect(key, scan) {
@@ -120,18 +123,18 @@ fun ScholarScreen(app: App, nav: NavHostController, key: String) {
             FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("شروح ودراسات حوله (${ArabicText.arabicDigits(about.size)})") })
         }
         SearchField(q, { q = it }, "بحث في كتب ${scholar.name}")
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState) {
             if (tab == 0) {
                 val f = filter(fresh)
                 if (f.isNotEmpty()) {
                     item { SectionHeader("مستجدات الموقع (لم تصل إلى الحزمة بعد)") }
-                    items(f, key = { "w${it.id}" }) { b -> Entry(app, nav, b, b.id in installed, b.id in queued, jobs[b.id], true) { confirm = b } }
+                    items(f, key = { "w${it.id}" }) { b -> Entry(app, nav, b, b.id in installed, b.id in queued, b.id in backed, jobs[b.id], true) { confirm = b } }
                 }
                 val grouped = filter(ownList).groupBy { it.categoryName.ifBlank { "غير مصنَّف" } }
                 if (grouped.isEmpty() && f.isEmpty()) item { EmptyState("لا نتائج", Modifier.height(160.dp)) }
                 grouped.forEach { (cat, books) ->
                     item(key = "h$cat") { SectionHeader("$cat (${ArabicText.arabicDigits(books.size)})") }
-                    items(books, key = { it.id }) { b -> Entry(app, nav, b, b.id in installed, b.id in queued, jobs[b.id], false) { confirm = b } }
+                    items(books, key = { it.id }) { b -> Entry(app, nav, b, b.id in installed, b.id in queued, b.id in backed, jobs[b.id], false) { confirm = b } }
                 }
             } else {
                 val a = filter(about)
@@ -141,7 +144,7 @@ fun ScholarScreen(app: App, nav: NavHostController, key: String) {
                     }
                 }
                 if (a.isEmpty()) item { EmptyState("لا نتائج", Modifier.height(160.dp)) }
-                items(a, key = { it.id }) { b -> Entry(app, nav, b, b.id in installed, b.id in queued, jobs[b.id], true) { confirm = b } }
+                items(a, key = { it.id }) { b -> Entry(app, nav, b, b.id in installed, b.id in queued, b.id in backed, jobs[b.id], true) { confirm = b } }
             }
         }
     }
@@ -168,9 +171,9 @@ fun ScholarScreen(app: App, nav: NavHostController, key: String) {
 }
 
 @Composable
-private fun Entry(app: App, nav: NavHostController, b: Book, isInstalled: Boolean, isQueued: Boolean, job: org.murabbie.shamela.data.DownloadJob?, showAuthor: Boolean, onDownload: () -> Unit) {
+private fun Entry(app: App, nav: NavHostController, b: Book, isInstalled: Boolean, isQueued: Boolean, onPhone: Boolean, job: org.murabbie.shamela.data.DownloadJob?, showAuthor: Boolean, onDownload: () -> Unit) {
     BookRow(
-        book = b, state = bookState(isInstalled, job, b, isQueued), job = job, showAuthor = showAuthor, showCategory = false,
+        book = b, state = bookState(isInstalled, job, b, isQueued, onPhone = onPhone), job = job, showAuthor = showAuthor, showCategory = false,
         onClick = { nav.go("reader/${b.id}") }, onLongClick = { nav.go("book/${b.id}") }, onDownload = onDownload,
     )
 }

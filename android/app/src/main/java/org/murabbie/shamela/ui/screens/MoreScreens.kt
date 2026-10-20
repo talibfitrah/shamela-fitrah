@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.NoteAdd
+import androidx.compose.material.icons.filled.SettingsBackupRestore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Update
@@ -76,6 +78,8 @@ fun MoreScreen(app: App, nav: NavHostController) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("المزيد") })
         Column(Modifier.verticalScroll(rememberScrollState())) {
+            MoreItem(Icons.Default.SettingsBackupRestore, "حفظ الكتب واستعادتها", "مجلد خارجي يبقى بعد إزالة التطبيق — استعادة الكتب دون تنزيل") { nav.go("backup") }
+            MoreItem(Icons.Default.NoteAdd, "إدراج كتب من ملفات", "Word، PDF نصّي، TXT، EPUB — من مصادر الشاملة أو من ملفاتك") { nav.go("import") }
             MoreItem(Icons.Default.Hub, "خدمات الشاملة", "القرآن والتفسير، تراجم الرواة، تخريج الحديث والأسانيد، البحث بالجذر") { nav.go("services") }
             MoreItem(Icons.Default.CloudDownload, "مستجدات الشاملة", "البحث في shamela.ws عن الكتب الجديدة التي لم تصل إلى الحزمة") { nav.go("newbooks") }
             MoreItem(Icons.Default.Update, "المستجدات والتحديثات", (if (appUpdate) "يتوفر إصدار جديد من التطبيق" else if (dataUpdate) "يتوفر فهرس محدَّث" else "آخر الكتب المضافة في shamela.ws وتحديث الفهرس")) { nav.go("updates") }

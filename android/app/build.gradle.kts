@@ -19,8 +19,8 @@ android {
         applicationId = "org.murabbie.shamela"
         minSdk = 24
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.2.0"
+        versionCode = 20
+        versionName = "1.5.0"
         vectorDrawables.useSupportLibrary = true
         // رابط manifest الدائم على NAS (احتياطي إن تعذّرت الواجهة الموثَّقة)
         buildConfigField("String", "DEFAULT_MANIFEST_URL", "\"${project.findProperty("manifestUrl") ?: "https://files.murabbie.org/fsdownload/FnGtHqpG9/manifest.json"}\"")
@@ -99,6 +99,7 @@ dependencies {
     implementation("androidx.sqlite:sqlite:2.5.2")
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")   // استخراج نص PDF لإدراج الكتب
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")

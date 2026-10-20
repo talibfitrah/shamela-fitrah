@@ -64,24 +64,54 @@ private sealed class Scope {
     data class Selected(val ids: Set<Int>) : Scope()
 }
 
+/**
+ * ذاكرة نتائج البحث بين التنقلات (على مستوى التطبيق): عند فتح نتيجة ثم العودة تُستعاد القائمة نفسها
+ * بنتائجها وموضع التمرير وخيارات العرض، دون إعادة البحث. ذاكرة مستقلة للبحث العام ولكل بحث داخل كتاب.
+ */
+private object SearchMemory {
+    class Saved(
+        var query: String = "",
+        var scope: Scope = Scope.AllInstalled,
+        var hits: List<SearchHit> = emptyList(),
+        var done: SearchEvent.Done? = null,
+        var groupByBook: Boolean = true,
+        var expandedBooks: Set<Int> = emptySet(),
+        var scrollIndex: Int = 0,
+        var scrollOffset: Int = 0,
+    )
+    private val map = HashMap<Int, Saved>()
+    fun of(bookId: Int?): Saved = synchronized(map) { map.getOrPut(bookId ?: -1) { Saved() } }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: String?) {
     val settings by app.settings.state.collectAsState()
     val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf(initialQuery ?: "") }
-    var searchScope by remember { mutableStateOf<Scope>(Scope.AllInstalled) }
-    var hits by remember { mutableStateOf<List<SearchHit>>(emptyList()) }
+    val mem = remember { SearchMemory.of(bookId) }
+    var query by remember { mutableStateOf(if (!initialQuery.isNullOrBlank()) initialQuery else mem.query) }
+    var searchScope by remember { mutableStateOf(mem.scope) }
+    var hits by remember { mutableStateOf(mem.hits) }
     var progress by remember { mutableStateOf<SearchEvent.Progress?>(null) }
-    var done by remember { mutableStateOf<SearchEvent.Done?>(null) }
+    var done by remember { mutableStateOf(mem.done) }
     var running by remember { mutableStateOf<Job?>(null) }
     var history by remember { mutableStateOf<List<String>>(emptyList()) }
     var showScope by remember { mutableStateOf(false) }
-    var groupByBook by remember { mutableStateOf(true) }
-    var expandedBooks by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var groupByBook by remember { mutableStateOf(mem.groupByBook) }
+    var expandedBooks by remember { mutableStateOf(mem.expandedBooks) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState(mem.scrollIndex, mem.scrollOffset)
     val installedVer by app.library.installedVersion.collectAsState()
 
-    LaunchedEffect(bookId) { if (bookId != null) app.book(bookId)?.let { searchScope = Scope.OneBook(it) } }
+    // حفظ الحالة عند مغادرة الشاشة (فتح نتيجة) لتُستعاد عند العودة
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose {
+            mem.query = query; mem.scope = searchScope; mem.hits = hits; mem.done = done
+            mem.groupByBook = groupByBook; mem.expandedBooks = expandedBooks
+            mem.scrollIndex = listState.firstVisibleItemIndex; mem.scrollOffset = listState.firstVisibleItemScrollOffset
+        }
+    }
+
+    LaunchedEffect(bookId) { if (bookId != null && (searchScope as? Scope.OneBook)?.book?.id != bookId) app.book(bookId)?.let { searchScope = Scope.OneBook(it) } }
     LaunchedEffect(Unit) { history = app.userDb.searches().map { it.query } }
 
     suspend fun booksForScope(): List<Book> {
@@ -99,7 +129,9 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
         if (q.isBlank()) return
         running?.cancel()
         hits = emptyList(); done = null; progress = null; expandedBooks = emptySet()
+        mem.scrollIndex = 0; mem.scrollOffset = 0
         running = scope.launch {
+            runCatching { listState.scrollToItem(0) }
             app.userDb.addSearch(q); history = app.userDb.searches().map { it.query }
             val books = booksForScope()
             if (books.isEmpty()) { done = SearchEvent.Done(0, 0); return@launch }
@@ -116,7 +148,7 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
         }
     }
 
-    LaunchedEffect(Unit) { if (!initialQuery.isNullOrBlank()) run() }
+    LaunchedEffect(Unit) { if (!initialQuery.isNullOrBlank() && hits.isEmpty() && done == null) run() }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -157,7 +189,7 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
             val hl = MaterialTheme.colorScheme.secondaryContainer
             if (groupByBook) {
                 val groups = remember(hits) { hits.groupBy { it.bookId } }
-                LazyColumn(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize(), state = listState) {
                     for ((bid, list) in groups) {
                         val first = list.first()
                         val expanded = bid in expandedBooks || groups.size == 1
@@ -176,7 +208,7 @@ fun SearchScreen(app: App, nav: NavHostController, bookId: Int?, initialQuery: S
                         if (expanded) items(list, key = { "h${it.bookId}-${it.pageId}-${it.snippet.hashCode()}" }) { h -> HitRow(h, hl, showBook = false) { nav.go("reader/${h.bookId}/${h.pageId}?q=${android.net.Uri.encode(query)}") } }
                     }
                 }
-            } else LazyColumn(Modifier.fillMaxSize()) {
+            } else LazyColumn(Modifier.fillMaxSize(), state = listState) {
                 items(hits, key = { "h${it.bookId}-${it.pageId}-${it.snippet.hashCode()}" }) { h -> HitRow(h, hl, showBook = true) { nav.go("reader/${h.bookId}/${h.pageId}?q=${android.net.Uri.encode(query)}") } }
             }
         }

@@ -75,7 +75,7 @@ data class SearchHit(val bookId: Int, val bookName: String, val authorName: Stri
 data class RecentBook(val id: Int, val name: String, val authorId: Int?, val authorName: String, val card: String)
 
 /** حالة ملف كتاب على الجهاز */
-enum class BookState { NOT_DOWNLOADED, QUEUED, DOWNLOADING, INSTALLED, UNAVAILABLE }
+enum class BookState { NOT_DOWNLOADED, QUEUED, DOWNLOADING, INSTALLED, ON_PHONE, UNAVAILABLE }
 
 /** ملف manifest.json على NAS. path = المسار على NAS (للواجهة الموثَّقة)، url = رابط المشاركة (احتياطي). */
 data class ManifestPack(val file: String, val url: String, val path: String, val size: Long, val sha256: String)
@@ -89,6 +89,7 @@ data class Manifest(
     val dataVersion: String,
     val master: ManifestFile?,
     val services: ManifestFile?,
+    val tashkeel: ManifestFile?,
     val packs: Map<String, ManifestPack>,
     val nasDir: String,
     val siteRecent: String,
@@ -118,6 +119,7 @@ data class Manifest(
                 notes = app.optString("notes").takeIf { it.isNotBlank() },
                 dataVersion = data.optString("version", ""),
                 master = m?.let { ManifestFile(it.optString("url"), it.optString("path").ifBlank { "$dir/master.db.gz" }, it.optLong("size", -1), it.optString("sha256"), it.optLong("raw_size", -1)) },
+                tashkeel = data.optJSONObject("tashkeel")?.let { ManifestFile(it.optString("url"), it.optString("path").ifBlank { "$dir/tashkeel.db.gz" }, it.optLong("size", -1), it.optString("sha256"), it.optLong("raw_size", -1)) },
                 services = data.optJSONObject("services")?.let { ManifestFile(it.optString("url"), it.optString("path").ifBlank { "$dir/services.db.gz" }, it.optLong("size", -1), it.optString("sha256"), it.optLong("raw_size", -1)) },
                 packs = packs,
                 nasDir = dir,

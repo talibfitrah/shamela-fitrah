@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.SettingsBackupRestore
 import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Search
@@ -47,10 +48,11 @@ import org.murabbie.shamela.data.BookState
 import org.murabbie.shamela.data.DownloadJob
 import org.murabbie.shamela.data.JobStatus
 
-fun bookState(installed: Boolean, job: DownloadJob?, book: Book, queued: Boolean = false): BookState = when {
+fun bookState(installed: Boolean, job: DownloadJob?, book: Book, queued: Boolean = false, onPhone: Boolean = false): BookState = when {
     installed -> BookState.INSTALLED
     job?.status == JobStatus.DOWNLOADING || job?.status == JobStatus.INSTALLING -> BookState.DOWNLOADING
     job?.status == JobStatus.QUEUED || queued -> BookState.QUEUED
+    onPhone -> BookState.ON_PHONE   // محفوظ في مجلد الحفظ على الهاتف — يُستعاد بلا إنترنت
     else -> BookState.NOT_DOWNLOADED
 }
 
@@ -87,6 +89,9 @@ fun BookRow(
                 BookState.NOT_DOWNLOADED -> if (onDownload != null) IconButton(onClick = onDownload, modifier = Modifier.size(32.dp)) {
                     Icon(if (book.file != null && book.file.pack.isNotBlank()) Icons.Default.CloudDownload else Icons.Default.Language, contentDescription = "تنزيل", tint = MaterialTheme.colorScheme.primary)
                 }
+                BookState.ON_PHONE -> if (onDownload != null) IconButton(onClick = onDownload, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.SettingsBackupRestore, contentDescription = "محفوظ على الهاتف — استعادة بلا إنترنت", tint = MaterialTheme.colorScheme.tertiary)
+                } else Icon(Icons.Default.SettingsBackupRestore, contentDescription = "محفوظ على الهاتف", tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(22.dp))
                 BookState.UNAVAILABLE -> {}
             }
         }

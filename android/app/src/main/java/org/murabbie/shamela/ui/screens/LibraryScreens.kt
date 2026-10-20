@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -53,6 +57,29 @@ import org.murabbie.shamela.ui.SearchField
 import org.murabbie.shamela.ui.bookState
 import org.murabbie.shamela.ui.go
 
+/**
+ * ذاكرة قوائم المكتبة بين التنقلات: نص البحث داخل القائمة وموضع التمرير يبقيان محفوظين
+ * عند فتح كتاب والرجوع، وعند التنقل بين التبويبات — لكل قائمة ذاكرتها (كل الكتب، المؤلفون،
+ * المثبَّتة، كل قسم، كل مؤلف، كل عَلَم).
+ */
+internal object ListMemory {
+    class Saved(var query: String = "", var index: Int = 0, var offset: Int = 0, var tab: Int = 0)
+    private val map = HashMap<String, Saved>()
+    fun of(key: String): Saved = synchronized(map) { map.getOrPut(key) { Saved() } }
+}
+
+/** حالة قائمة محفوظة: (الذاكرة، نص البحث، حالة التمرير) تُحفظ تلقائيًّا عند مغادرة الشاشة */
+@Composable
+internal fun rememberListMemory(key: String): Triple<ListMemory.Saved, MutableState<String>, LazyListState> {
+    val mem = remember(key) { ListMemory.of(key) }
+    val q = remember(key) { mutableStateOf(mem.query) }
+    val listState = rememberLazyListState(mem.index, mem.offset)
+    DisposableEffect(key) {
+        onDispose { mem.query = q.value; mem.index = listState.firstVisibleItemIndex; mem.offset = listState.firstVisibleItemScrollOffset }
+    }
+    return Triple(mem, q, listState)
+}
+
 private val libraryTabs = listOf("الأقسام", "المؤلفون", "كل الكتب", "المثبَّتة", "المضاف حديثًا")
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,9 +111,10 @@ fun LibraryScreen(app: App, nav: NavHostController) {
 @Composable
 private fun CategoriesTab(app: App, nav: NavHostController) {
     var cats by remember { mutableStateOf<List<Category>?>(null) }
+    val (_, _, listState) = rememberListMemory("cats")
     LaunchedEffect(Unit) { cats = app.library.categories() }
     val list = cats ?: return Loading()
-    LazyColumn(Modifier.fillMaxSize()) {
+    LazyColumn(Modifier.fillMaxSize(), state = listState) {
         items(list, key = { it.id }) { c ->
             Row(Modifier.fillMaxWidth().clickable { nav.go("category/${c.id}") }.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(c.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
@@ -101,13 +129,14 @@ private fun CategoriesTab(app: App, nav: NavHostController) {
 
 @Composable
 private fun AuthorsTab(app: App, nav: NavHostController) {
-    var q by remember { mutableStateOf("") }
+    val (_, qState, listState) = rememberListMemory("authors")
+    var q by qState
     var authors by remember { mutableStateOf<List<Author>?>(null) }
     LaunchedEffect(q) { authors = app.library.authors(q) }
     Column(Modifier.fillMaxSize()) {
         SearchField(q, { q = it }, "بحث في أسماء المؤلفين")
         val list = authors ?: return Loading()
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState) {
             items(list, key = { it.id }) { a ->
                 Row(Modifier.fillMaxWidth().clickable { nav.go("author/${a.id}") }.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -123,20 +152,21 @@ private fun AuthorsTab(app: App, nav: NavHostController) {
 }
 
 @Composable
-fun BookList(app: App, nav: NavHostController, books: List<Book>, showCategory: Boolean = false, header: (@Composable () -> Unit)? = null) {
+fun BookList(app: App, nav: NavHostController, books: List<Book>, showCategory: Boolean = false, header: (@Composable () -> Unit)? = null, listState: LazyListState = rememberLazyListState()) {
     val jobs by app.downloads.jobs.collectAsState()
     val queued by app.downloads.queued.collectAsState()
     val installedVer by app.library.installedVersion.collectAsState()
     val installed = remember(installedVer) { app.library.installedIds() }
+    val backed by app.backup.backedIds.collectAsState()
     val scope = rememberCoroutineScope()
     var confirm by remember { mutableStateOf<Book?>(null) }
     if (books.isEmpty()) { EmptyState("لا كتب هنا"); return }
-    LazyColumn(Modifier.fillMaxSize()) {
+    LazyColumn(Modifier.fillMaxSize(), state = listState) {
         if (header != null) item { header() }
         items(books, key = { it.id }) { b ->
             val job = jobs[b.id]
             BookRow(
-                book = b, state = bookState(b.id in installed, job, b, b.id in queued), job = job, showCategory = showCategory,
+                book = b, state = bookState(b.id in installed, job, b, b.id in queued, onPhone = b.id in backed), job = job, showCategory = showCategory,
                 onClick = { nav.go("reader/${b.id}") },
                 onLongClick = { nav.go("book/${b.id}") },
                 onDownload = { confirm = b },
@@ -147,7 +177,11 @@ fun BookList(app: App, nav: NavHostController, books: List<Book>, showCategory: 
         AlertDialog(
             onDismissRequest = { confirm = null },
             title = { Text(b.name, maxLines = 3, overflow = TextOverflow.Ellipsis) },
-            text = { Text(if (b.file != null && b.file.pack.isNotBlank()) "تنزيل الكتاب من الخادم (${ArabicText.formatSize(b.file.length)}؛ ${ArabicText.formatSize(b.file.size)} بعد فك الضغط)؟" else "هذا الكتاب غير موجود على الخادم بعد؛ سيُجلب من موقع shamela.ws صفحةً صفحة.") },
+            text = { Text(when {
+                b.id in backed -> "هذا الكتاب محفوظ على هاتفك في مجلد الحفظ — سيُستعاد فورًا دون إنترنت ودون تنزيل."
+                b.file != null && b.file.pack.isNotBlank() -> "تنزيل الكتاب من الخادم (${ArabicText.formatSize(b.file.length)}؛ ${ArabicText.formatSize(b.file.size)} بعد فك الضغط)؟"
+                else -> "هذا الكتاب غير موجود على الخادم بعد؛ سيُجلب من موقع shamela.ws صفحةً صفحة."
+            }) },
             confirmButton = { TextButton(onClick = { scope.launch { app.downloads.enqueue(b) }; confirm = null }) { Text("تنزيل") } },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text("إلغاء") } },
         )
@@ -156,21 +190,23 @@ fun BookList(app: App, nav: NavHostController, books: List<Book>, showCategory: 
 
 @Composable
 private fun AllBooksTab(app: App, nav: NavHostController) {
-    var q by remember { mutableStateOf("") }
+    val (_, qState, listState) = rememberListMemory("all-books")
+    var q by qState
     var books by remember { mutableStateOf<List<Book>?>(null) }
     LaunchedEffect(q) { books = if (q.isBlank()) app.library.allBooks() else app.library.searchBooks(q) }
     Column(Modifier.fillMaxSize()) {
         SearchField(q, { q = it }, "بحث في أسماء الكتب والمؤلفين")
         val list = books ?: return Loading()
         Text("${ArabicText.arabicDigits(list.size)} كتاب", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
-        BookList(app, nav, list, showCategory = true)
+        BookList(app, nav, list, showCategory = true, listState = listState)
     }
 }
 
 @Composable
 private fun InstalledTab(app: App, nav: NavHostController) {
     val installedVer by app.library.installedVersion.collectAsState()
-    var q by remember { mutableStateOf("") }
+    val (_, qState, listState) = rememberListMemory("installed")
+    var q by qState
     var books by remember { mutableStateOf<List<Book>?>(null) }
     LaunchedEffect(installedVer, q) {
         val ids = app.library.installedIds()
@@ -182,13 +218,20 @@ private fun InstalledTab(app: App, nav: NavHostController) {
         SearchField(q, { q = it }, "بحث في الكتب المثبَّتة")
         val list = books ?: return Loading()
         val size = remember(installedVer) { app.library.installedSize() }
-        Text("${ArabicText.arabicDigits(list.size)} كتاب مثبَّت — ${ArabicText.formatSize(size)}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
-        if (list.isEmpty()) EmptyState("لم تنزّل كتبًا بعد.\nتصفح الأقسام أو المؤلفين واضغط أيقونة التنزيل بجانب الكتاب.") else BookList(app, nav, list, showCategory = true)
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("${ArabicText.arabicDigits(list.size)} كتاب مثبَّت — ${ArabicText.formatSize(size)}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onClick = { nav.go("import") }) { Text("إدراج من ملف") }
+        }
+        if (list.isEmpty()) Column(Modifier.fillMaxSize()) {
+            EmptyState("لم تنزّل كتبًا بعد.\nتصفح الأقسام أو المؤلفين واضغط أيقونة التنزيل بجانب الكتاب.", Modifier.weight(1f, fill = false).fillMaxWidth().height(200.dp))
+            androidx.compose.material3.TextButton(onClick = { nav.go("backup") }, modifier = Modifier.padding(horizontal = 16.dp)) { Text("كانت لديك كتب منزَّلة من قبل؟ استعدها من مجلد الحفظ") }
+        } else BookList(app, nav, list, showCategory = true, listState = listState)
     }
 }
 
 @Composable
 private fun RecentTab(app: App, nav: NavHostController) {
+    val (_, _, listState) = rememberListMemory("recent")
     var books by remember { mutableStateOf<List<Book>?>(null) }
     LaunchedEffect(Unit) { books = app.library.recentBooks(300) }
     Column(Modifier.fillMaxSize()) {
@@ -204,7 +247,7 @@ private fun RecentTab(app: App, nav: NavHostController) {
             }
         }
         val list = books ?: return Loading()
-        BookList(app, nav, list, showCategory = true)
+        BookList(app, nav, list, showCategory = true, listState = listState)
     }
 }
 
@@ -213,7 +256,8 @@ private fun RecentTab(app: App, nav: NavHostController) {
 fun CategoryBooksScreen(app: App, nav: NavHostController, id: Int) {
     var cat by remember { mutableStateOf<Category?>(null) }
     var books by remember { mutableStateOf<List<Book>?>(null) }
-    var q by remember { mutableStateOf("") }
+    val (_, qState, listState) = rememberListMemory("cat-$id")
+    var q by qState
     val scope = rememberCoroutineScope()
     var confirmAll by remember { mutableStateOf(false) }
     LaunchedEffect(id) { cat = app.library.category(id); books = app.library.booksInCategory(id) }
@@ -231,7 +275,7 @@ fun CategoryBooksScreen(app: App, nav: NavHostController, id: Int) {
         SearchField(q, { q = it }, "بحث داخل القسم")
         if (filtered == null) Loading() else {
             Text("${ArabicText.arabicDigits(filtered.size)} كتاب", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
-            BookList(app, nav, filtered)
+            BookList(app, nav, filtered, listState = listState)
         }
     }
     if (confirmAll && list != null) {
@@ -251,6 +295,7 @@ fun CategoryBooksScreen(app: App, nav: NavHostController, id: Int) {
 fun AuthorBooksScreen(app: App, nav: NavHostController, id: Int) {
     var author by remember { mutableStateOf<Author?>(null) }
     var books by remember { mutableStateOf<List<Book>?>(null) }
+    val (_, _, listState) = rememberListMemory("author-$id")
     val scope = rememberCoroutineScope()
     var confirmAll by remember { mutableStateOf(false) }
     LaunchedEffect(id) { author = app.library.author(id); books = app.library.booksByAuthor(id) }
@@ -261,7 +306,7 @@ fun AuthorBooksScreen(app: App, nav: NavHostController, id: Int) {
             actions = { IconButton(onClick = { confirmAll = true }) { Icon(Icons.Default.CloudDownload, contentDescription = "تنزيل كتب المؤلف") } },
         )
         val list = books ?: return Loading()
-        BookList(app, nav, list, showCategory = true)
+        BookList(app, nav, list, showCategory = true, listState = listState)
     }
     val list = books
     if (confirmAll && list != null) {

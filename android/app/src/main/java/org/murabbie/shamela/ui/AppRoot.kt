@@ -43,6 +43,8 @@ import org.murabbie.shamela.ui.screens.UpdatesScreen
 import org.murabbie.shamela.ui.screens.NewBooksScreen
 import org.murabbie.shamela.ui.screens.ScholarScreen
 import org.murabbie.shamela.ui.screens.ServicesScreen
+import org.murabbie.shamela.ui.screens.ImportScreen
+import org.murabbie.shamela.ui.screens.BackupScreen
 import org.murabbie.shamela.ui.screens.QuranScreen
 import org.murabbie.shamela.ui.screens.RowatSearchScreen
 import org.murabbie.shamela.ui.screens.TakhrijInfoScreen
@@ -112,6 +114,8 @@ fun AppRoot(app: App, pendingOpen: MutableState<String?>) {
             composable("updates") { UpdatesScreen(app, nav) }
             composable("newbooks") { NewBooksScreen(app, nav) }
             composable("services") { ServicesScreen(app, nav) }
+            composable("import") { ImportScreen(app, nav) }
+            composable("backup") { BackupScreen(app, nav) }
             composable("quran") { QuranScreen(app, nav) }
             composable("rowat") { RowatSearchScreen(app, nav) }
             composable("takhrij") { TakhrijInfoScreen(app, nav) }

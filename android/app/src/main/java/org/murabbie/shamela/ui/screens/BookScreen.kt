@@ -151,9 +151,14 @@ fun BookScreen(app: App, nav: NavHostController, id: Int) {
                         }
                         TextButton(onClick = { app.downloads.cancel(id) }) { Text("إلغاء") }
                     } else {
+                        val backed by app.backup.backedIds.collectAsState()
                         OutlinedButton(onClick = { scope.launch { app.downloads.enqueue(b) } }, modifier = Modifier.weight(1f)) {
                             Icon(Icons.Default.Download, contentDescription = null); Spacer(Modifier.width(6.dp))
-                            Text(if (b.file != null && b.file.pack.isNotBlank()) "تنزيل للاستخدام دون اتصال (${ArabicText.formatSize(b.file.length)})" else "تنزيل للاستخدام دون اتصال")
+                            Text(when {
+                                id in backed -> "استعادة من نسخة الهاتف (بلا إنترنت)"
+                                b.file != null && b.file.pack.isNotBlank() -> "تنزيل للاستخدام دون اتصال (${ArabicText.formatSize(b.file.length)})"
+                                else -> "تنزيل للاستخدام دون اتصال"
+                            })
                         }
                     }
                 }

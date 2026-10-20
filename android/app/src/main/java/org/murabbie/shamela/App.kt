@@ -13,6 +13,8 @@ import org.murabbie.shamela.data.BookStore
 import org.murabbie.shamela.data.DownloadService
 import org.murabbie.shamela.data.NewBooks
 import org.murabbie.shamela.data.Services
+import org.murabbie.shamela.data.Tashkeel
+import org.murabbie.shamela.data.Speaker
 import org.murabbie.shamela.data.Downloads
 import org.murabbie.shamela.data.Library
 import org.murabbie.shamela.data.Settings
@@ -25,7 +27,10 @@ class App : Application() {
     lateinit var userDb: UserDb; private set
     lateinit var downloads: Downloads; private set
     lateinit var newBooks: NewBooks; private set
+    lateinit var backup: org.murabbie.shamela.data.Backup; private set
     lateinit var services: Services; private set
+    lateinit var tashkeel: Tashkeel; private set
+    val speaker: Speaker by lazy { Speaker(this) }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
@@ -36,7 +41,11 @@ class App : Application() {
         userDb = UserDb(this)
         downloads = Downloads(this, library, settings)
         newBooks = NewBooks(library, userDb)
+        backup = org.murabbie.shamela.data.Backup(this, library, settings, userDb)
+        downloads.backup = backup
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { if (backup.available()) backup.listBackedUp() } }
         services = Services(library)
+        tashkeel = Tashkeel(library)
         downloads.onActivity = { active -> if (active) DownloadService.start(this) }
         downloads.onWebImported = { id, file ->
             val meta = runCatching { BookReader(id, file).meta() }.getOrDefault(emptyMap())

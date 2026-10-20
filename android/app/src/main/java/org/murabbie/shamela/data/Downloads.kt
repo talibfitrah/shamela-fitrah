@@ -72,6 +72,19 @@ class Downloads(private val context: Context, private val library: Library, priv
 
     var onActivity: (Boolean) -> Unit = {}
     var onWebImported: suspend (Int, File) -> Unit = { _, _ -> }
+    /** النسخ الاحتياطي الخارجي: يُفحص قبل أي تنزيل، ويُنسخ إليه كل كتاب يُثبَّت */
+    @Volatile var backup: Backup? = null
+
+    /** تثبيت كتاب: من المجلد الاحتياطي إن وُجد فيه (بلا شبكة)، وإلا من الخادم أو الموقع ثم نسخه احتياطيًّا. */
+    private suspend fun installBook(book: Book) {
+        val b = backup
+        if (b != null && runCatching { b.restoreBook(book.id) }.getOrDefault(false)) {
+            updateJob(book.id) { it.copy(status = JobStatus.INSTALLING, message = "استُعيد من النسخة الاحتياطية على الهاتف") }
+            return
+        }
+        if (book.file != null && book.file.pack.isNotBlank()) downloadFromNas(book) else downloadFromWeb(book)
+        if (b != null) scope.launch { runCatching { b.mirrorBook(book.id) } }
+    }
 
     fun jobFor(id: Int): DownloadJob? = _jobs.value[id]
 
@@ -136,6 +149,15 @@ class Downloads(private val context: Context, private val library: Library, priv
             val id = nextId() ?: break
             _queued.value = _queued.value - id
             refreshBulk()
+            // محفوظ في مجلد الحفظ؟ استعادة فورية بلا شبكة قبل انتظارها
+            val early = webBooks[id] ?: library.book(id)
+            if (early != null && backup?.let { runCatching { it.restoreBook(id) }.getOrDefault(false) } == true) {
+                if (_jobs.value[id] == null) putJob(DownloadJob(id, early.name, JobSource.NAS, JobStatus.DOWNLOADING, order = seq++))
+                doneCount++
+                updateJob(id) { it.copy(status = JobStatus.DONE, message = "استُعيد من النسخة الاحتياطية على الهاتف") }
+                library.bumpInstalled(); webBooks.remove(id); pruneDone(); refreshBulk()
+                continue
+            }
             waitForNetwork(id)
             if (paused) { markPaused(id); break }
             onActivity(true)
@@ -143,7 +165,7 @@ class Downloads(private val context: Context, private val library: Library, priv
             if (book == null) { errorCount++; updateJob(id) { it.copy(status = JobStatus.ERROR, message = "الكتاب غير موجود في الفهرس") }; refreshBulk(); continue }
             try {
                 if (_jobs.value[id] == null) putJob(DownloadJob(id, book.name, if (webBooks.containsKey(id)) JobSource.WEB else JobSource.NAS, JobStatus.DOWNLOADING, order = seq++))
-                if (book.file != null && book.file.pack.isNotBlank()) downloadFromNas(book) else downloadFromWeb(book)
+                installBook(book)
                 doneCount++
                 updateJob(id) { it.copy(status = JobStatus.DONE, message = "") }
                 library.bumpInstalled()
@@ -276,7 +298,7 @@ class Downloads(private val context: Context, private val library: Library, priv
         putJob(DownloadJob(book.id, book.name, if (nas) JobSource.NAS else JobSource.WEB, JobStatus.DOWNLOADING, order = seq++))
         onActivity(true)
         return try {
-            if (nas) downloadFromNas(book) else downloadFromWeb(book)
+            installBook(book)
             doneCount++; updateJob(book.id) { it.copy(status = JobStatus.DONE, message = "") }
             library.bumpInstalled(); pruneDone(); refreshBulk(); true
         } catch (e: kotlinx.coroutines.CancellationException) {

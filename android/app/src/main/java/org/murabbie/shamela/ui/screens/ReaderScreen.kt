@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,6 +74,12 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.runtime.DisposableEffect
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -101,6 +108,11 @@ fun ReaderScreen(app: App, nav: NavHostController, bookId: Int, startPage: Int?,
     var startIndex by remember { mutableStateOf(-1) }
     var error by remember { mutableStateOf<String?>(null) }
     val pages = remember { mutableStateMapOf<Int, Page>() }
+    val voc = remember { mutableStateMapOf<Int, String>() }   // نصوص مشكولة آليًّا
+    var listening by remember { mutableStateOf(false) }
+    var showVoice by remember { mutableStateOf(false) }
+    val speakState by app.speaker.state.collectAsState()
+    val tkState by app.tashkeel.state.collectAsState()
     var showToc by remember { mutableStateOf(false) }
     var showGoto by remember { mutableStateOf(false) }
     var showFont by remember { mutableStateOf(false) }
@@ -186,8 +198,41 @@ fun ReaderScreen(app: App, nav: NavHostController, bookId: Int, startPage: Int?,
         val p = pages[currentId] ?: r.page(currentId)
         if (p != null) { app.userDb.setPosition(b, p); bookmarked = app.userDb.isBookmarked(bookId, currentId) }
         sectionTitle = r.titleForPage(currentId)?.text ?: ""
+        if (settings.autoTashkeel && app.tashkeel.installed) for (d in listOf(0, 1, -1)) {
+            val id = ids.getOrNull(pager.currentPage + d)?.first ?: continue
+            val pg = pages[id] ?: continue
+            if (voc[id] == null) voc[id] = app.tashkeel.vocalizeHtml(pg.body)
+        }
         if (pages.size > 60) { val keep = (pager.currentPage - 5..pager.currentPage + 5).mapNotNull { ids.getOrNull(it)?.first }.toSet(); pages.keys.filter { it !in keep }.forEach { pages.remove(it) } }
     }
+
+    // عند تغيير خيار التشكيل الآلي
+    LaunchedEffect(settings.autoTashkeel, tkState) {
+        voc.clear()
+        if (settings.autoTashkeel && app.tashkeel.installed) { val id = currentId; pages[id]?.let { voc[id] = app.tashkeel.vocalizeHtml(it.body) } }
+    }
+    // القراءة الصوتية: عند انتهاء الصفحة ينتقل إلى التالية ويكمل
+    fun speakPage(id: Int) {
+        scope.launch {
+            val pg = pages[id] ?: r.page(id) ?: return@launch
+            val body = if (app.tashkeel.installed) app.tashkeel.vocalizeHtml(pg.body) else pg.body
+            val plain = PageRenderer.render(body, PageColors(androidx.compose.ui.graphics.Color.Black, androidx.compose.ui.graphics.Color.Black, androidx.compose.ui.graphics.Color.Black, androidx.compose.ui.graphics.Color.Black, androidx.compose.ui.graphics.Color.Black), 16.sp, true).plain
+            app.speaker.rate = settings.ttsRate
+            app.speaker.pitch = settings.ttsPitch
+            app.speaker.voiceName = settings.ttsVoice
+            app.speaker.cloud = if (settings.useCloudTts && settings.cloudTtsKey.isNotBlank()) org.murabbie.shamela.data.CloudTts(settings.cloudTtsKey.trim(), settings.cloudTtsRegion.trim(), settings.cloudTtsVoice) else null
+            app.speaker.speak(plain)
+        }
+    }
+    LaunchedEffect(listening) {
+        app.speaker.onPageDone = {
+            if (listening) scope.launch {
+                if (pager.currentPage < ids.size - 1) { pager.scrollToPage(pager.currentPage + 1); speakPage(ids[pager.currentPage].first) }
+                else { listening = false; app.speaker.stop() }
+            }
+        }
+    }
+    DisposableEffect(Unit) { onDispose { app.speaker.stop(); app.speaker.onPageDone = null } }
 
     val colors = PageColors(
         heading = MaterialTheme.colorScheme.primary, quote = MaterialTheme.colorScheme.tertiary, ref = MaterialTheme.colorScheme.secondary.let { if (settings.themeMode == 2) it else MaterialTheme.colorScheme.onSecondaryContainer },
@@ -218,6 +263,7 @@ fun ReaderScreen(app: App, nav: NavHostController, bookId: Int, startPage: Int?,
                     Icon(if (bookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder, contentDescription = "علامة", tint = if (bookmarked) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface)
                 }
                 IconButton(onClick = { nav.go("search/$bookId") }) { Icon(Icons.Default.Search, contentDescription = "بحث في الكتاب") }
+                IconButton(onClick = { if (listening) { listening = false; app.speaker.stop() } else { listening = true; speakPage(currentId) } }) { Icon(Icons.Default.VolumeUp, contentDescription = "قراءة الكتاب صوتيًّا", tint = if (listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface) }
                 IconButton(onClick = { showServices = true }) { Icon(Icons.Default.Hub, contentDescription = "الخدمات: التخريج والرواة والتفسير") }
                 IconButton(onClick = { showFont = true }) { Icon(Icons.Default.TextFields, contentDescription = "الخط") }
                 Box {
@@ -242,7 +288,8 @@ fun ReaderScreen(app: App, nav: NavHostController, bookId: Int, startPage: Int?,
                 LaunchedEffect(id) { r.page(id)?.let { pages[id] = it } }
                 Loading()
             } else {
-                val rendered = remember(p.id, settings.readerFontSize, settings.showTashkeel, highlightWords, colors) { PageRenderer.render(p.body, colors, bodyStyle.fontSize, settings.showTashkeel, highlightWords, false) }
+                val bodyHtml = voc[p.id] ?: p.body
+                val rendered = remember(p.id, bodyHtml, settings.readerFontSize, settings.showTashkeel, highlightWords, colors) { PageRenderer.render(bodyHtml, colors, bodyStyle.fontSize, settings.showTashkeel, highlightWords, false) }
                 val foot = remember(p.id, settings.showTashkeel, highlightWords) { p.foot?.takeIf { it.isNotBlank() }?.let { PageRenderer.renderFoot(it, colors, settings.showTashkeel, highlightWords, false) } }
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp)) {
                     var layout by remember(p.id) { mutableStateOf<TextLayoutResult?>(null) }
@@ -264,6 +311,24 @@ fun ReaderScreen(app: App, nav: NavHostController, bookId: Int, startPage: Int?,
                     Text(p.label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                     Spacer(Modifier.height(24.dp))
                 }
+            }
+        }
+        if (listening) Surface(tonalElevation = 4.dp, color = MaterialTheme.colorScheme.secondaryContainer) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { if (speakState.playing) app.speaker.pause() else app.speaker.resume() }) { Icon(if (speakState.playing) Icons.Default.Pause else Icons.Default.PlayArrow, contentDescription = "تشغيل/إيقاف مؤقت") }
+                    IconButton(onClick = { listening = false; app.speaker.stop() }) { Icon(Icons.Default.Stop, contentDescription = "إيقاف") }
+                    IconButton(onClick = { app.speaker.pitch = settings.ttsPitch; app.speaker.warmup(); showVoice = true }) { Icon(Icons.Default.RecordVoiceOver, contentDescription = "اختيار الصوت") }
+                    Column(Modifier.weight(1f)) {
+                        Text(if (!speakState.available) speakState.message else "قراءة الكتاب صوتيًّا — " + (currentPage?.label ?: "") + (if (speakState.chunks > 1) "  (${ArabicText.arabicDigits(speakState.chunk)}/${ArabicText.arabicDigits(speakState.chunks)})" else ""), style = MaterialTheme.typography.labelMedium, maxLines = 3)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("السرعة", style = MaterialTheme.typography.labelSmall)
+                            Slider(value = settings.ttsRate, onValueChange = { v -> app.settings.update { it.copy(ttsRate = v) }; app.speaker.rate = v }, valueRange = 0.5f..2.0f, modifier = Modifier.weight(1f).height(24.dp))
+                            Text("×${String.format(java.util.Locale.US, "%.1f", settings.ttsRate)}", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+                if (!speakState.available) TextButton(onClick = { runCatching { ctx.startActivity(Intent("com.android.settings.TTS_SETTINGS")) } }) { Text("إعدادات محرك النطق") }
             }
         }
         Surface(tonalElevation = 2.dp) {
@@ -304,6 +369,10 @@ fun ReaderScreen(app: App, nav: NavHostController, bookId: Int, startPage: Int?,
             Row(verticalAlignment = Alignment.CenterVertically) { Text("الخط:", Modifier.width(60.dp)); listOf("افتراضي", "مُسند (Serif)", "بسيط").forEachIndexed { i, n -> org.murabbie.shamela.ui.Chip(n, settings.readerFont == i) { app.settings.update { it.copy(readerFont = i) } } } }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) { Text("إظهار التشكيل", Modifier.weight(1f)); Switch(checked = settings.showTashkeel, onCheckedChange = { c -> app.settings.update { it.copy(showTashkeel = c) } }) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) { Text("تشكيل آلي للنص غير المشكول"); Text(if (app.tashkeel.installed) "من معجم التشكيل (بأرجح صور الكلمات في المكتبة)" else "يحتاج تنزيل معجم التشكيل من «خدمات الشاملة»", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                Switch(checked = settings.autoTashkeel && app.tashkeel.installed, onCheckedChange = { c -> if (app.tashkeel.installed) app.settings.update { it.copy(autoTashkeel = c, showTashkeel = if (c) true else it.showTashkeel) } else { showFont = false; nav.go("services") } })
+            }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("إظهار الهوامش", Modifier.weight(1f)); Switch(checked = settings.showFootnotes, onCheckedChange = { c -> app.settings.update { it.copy(showFootnotes = c) } }) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("إبقاء الشاشة مضاءة", Modifier.weight(1f)); Switch(checked = settings.keepScreenOn, onCheckedChange = { c -> app.settings.update { it.copy(keepScreenOn = c) } }) }
             Row(verticalAlignment = Alignment.CenterVertically) { Text("المظهر:", Modifier.width(60.dp)); listOf("النظام", "فاتح", "داكن", "ورقي").forEachIndexed { i, n -> org.murabbie.shamela.ui.Chip(n, settings.themeMode == i) { app.settings.update { it.copy(themeMode = i) } } } }
@@ -314,6 +383,7 @@ fun ReaderScreen(app: App, nav: NavHostController, bookId: Int, startPage: Int?,
     if (showNotes) NotesSheet(app, bookId, currentId, onDismiss = { showNotes = false })
     if (showServices) currentPage?.let { p -> PageServicesSheet(app, nav, b, p, onDismiss = { showServices = false }) { id -> showServices = false; rawiId = id } }
     rawiId?.let { id -> RawiSheet(app, nav, id, onDismiss = { rawiId = null }) }
+    if (showVoice) VoiceSheet(app, onDismiss = { showVoice = false; app.speaker.endPreview(); if (listening) speakPage(currentId) })
     if (showExport) ExportDialog(app, b, r, ids, currentId, titles, onDismiss = { showExport = false })
 }
 
@@ -373,6 +443,74 @@ private fun NotesSheet(app: App, bookId: Int, pageId: Int, onDismiss: () -> Unit
             OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp), placeholder = { Text("تعليق جديد…") }, minLines = 2)
             Button(onClick = { if (text.isNotBlank()) scope.launch { app.userDb.addNote(bookId, pageId, text.trim()); text = ""; notes = app.userDb.notes(bookId, pageId) } }, modifier = Modifier.padding(top = 8.dp)) { Text("حفظ") }
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+/** ورقة اختيار صوت القراءة: قائمة الأصوات العربية المتاحة (الرجالية أولًا) مع معاينة، وغِلَظ الصوت والسرعة. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VoiceSheet(app: App, onDismiss: () -> Unit) {
+    val settings by app.settings.state.collectAsState()
+    val voices by app.speaker.voices.collectAsState()
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.padding(horizontal = 16.dp)) {
+            Text("صوت القارئ", style = MaterialTheme.typography.titleMedium)
+            // ---- القارئ السحابي عالي الجودة ----
+            val vscope = rememberCoroutineScope()
+            var cloudErr by remember { mutableStateOf("") }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("القارئ الإذاعي السحابي (الجودة القصوى)", style = MaterialTheme.typography.titleSmall)
+                    Text("أصوات عصبية فصيحة كقارئ المواقع الإخبارية، بجودة ١٩٢ ك.ب/ث — يحتاج اتصالًا ومفتاحًا مجانيًّا", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = settings.useCloudTts, onCheckedChange = { c -> app.settings.update { it.copy(useCloudTts = c) } })
+            }
+            if (settings.useCloudTts) {
+                androidx.compose.material3.OutlinedTextField(value = settings.cloudTtsKey, onValueChange = { v -> app.settings.update { it.copy(cloudTtsKey = v) } }, label = { Text("المفتاح (Azure Speech Key)") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+                androidx.compose.material3.OutlinedTextField(value = settings.cloudTtsRegion, onValueChange = { v -> app.settings.update { it.copy(cloudTtsRegion = v) } }, label = { Text("المنطقة (مثل westeurope)") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+                Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(top = 4.dp)) {
+                    org.murabbie.shamela.data.CLOUD_VOICES.forEach { (id, label) ->
+                        org.murabbie.shamela.ui.Chip(label, settings.cloudTtsVoice == id) { app.settings.update { it.copy(cloudTtsVoice = id) } }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.OutlinedButton(onClick = {
+                        cloudErr = ""
+                        vscope.launch { cloudErr = app.speaker.previewCloud(org.murabbie.shamela.data.CloudTts(settings.cloudTtsKey.trim(), settings.cloudTtsRegion.trim(), settings.cloudTtsVoice)) ?: "" }
+                    }, enabled = settings.cloudTtsKey.isNotBlank()) { Text("جرّب الصوت السحابي") }
+                }
+                if (cloudErr.isNotBlank()) Text(cloudErr, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text("المفتاح المجاني: حساب Azure ← إنشاء مورد Speech ← انسخ المفتاح والمنطقة (الطبقة المجانية ٥٠٠ ألف حرف شهريًّا). يُحفظ على جهازك فقط، وما قُرئ مرة يُخزَّن فلا يُستهلك مرتين.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+                androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            }
+            Text("أو صوت الجهاز: الأصوات الرجالية تُعرض أولًا. اضغط ▶ لسماع عيّنة. خفض «غِلَظ الصوت» يجعل النطق أعمق. الأصوات «عبر الشبكة» أعلى جودة.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+            Spacer(Modifier.height(8.dp))
+            if (voices.isEmpty()) Text("لا أصوات عربية متاحة بعد — إن ظهر هذا دائمًا فثبّت العربية في محرك النطق من إعدادات الجهاز.", style = MaterialTheme.typography.bodySmall)
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.height(260.dp)) {
+                item {
+                    Row(Modifier.fillMaxWidth().clickable { app.settings.update { it.copy(ttsVoice = "") } }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.RadioButton(selected = settings.ttsVoice.isEmpty(), onClick = { app.settings.update { it.copy(ttsVoice = "") } })
+                        Text("تلقائي (أفضل صوت رجالي متاح)", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                items(voices.size) { i ->
+                    val v = voices[i]
+                    Row(Modifier.fillMaxWidth().clickable { app.settings.update { it.copy(ttsVoice = v.name) } }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.RadioButton(selected = settings.ttsVoice == v.name, onClick = { app.settings.update { it.copy(ttsVoice = v.name) } })
+                        Text(v.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        IconButton(onClick = { app.speaker.pitch = settings.ttsPitch; app.speaker.rate = settings.ttsRate; app.speaker.preview(v.name) }) { Icon(Icons.Default.PlayArrow, contentDescription = "معاينة") }
+                    }
+                }
+            }
+            Text("غِلَظ الصوت", style = MaterialTheme.typography.labelLarge)
+            Slider(value = settings.ttsPitch, onValueChange = { p -> app.settings.update { it.copy(ttsPitch = p) }; app.speaker.pitch = p }, valueRange = 0.5f..1.3f)
+            Row {
+                androidx.compose.material3.OutlinedButton(onClick = { app.speaker.pitch = settings.ttsPitch; app.speaker.rate = settings.ttsRate; app.speaker.preview(settings.ttsVoice.ifEmpty { voices.firstOrNull()?.name ?: "" }) }) { Text("استمع لعيّنة") }
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = onDismiss) { Text("تم") }
+            }
+            Spacer(Modifier.height(28.dp))
         }
     }
 }

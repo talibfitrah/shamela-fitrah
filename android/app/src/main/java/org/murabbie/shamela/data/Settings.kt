@@ -23,11 +23,20 @@ data class AppSettings(
     val searchInFoot: Boolean = true,
     val searchInTitles: Boolean = false,
     val searchByRoot: Boolean = false,
+    val autoTashkeel: Boolean = false,   // تشكيل آلي للنص غير المشكول (يحتاج معجم التشكيل)
+    val ttsRate: Float = 1.0f,          // سرعة القراءة الصوتية
+    val ttsPitch: Float = 0.85f,        // غِلَظ الصوت (أقل = أغلظ/أقرب إلى صوت الرجل)
+    val ttsVoice: String = "",          // اسم الصوت المختار (فارغ = اختيار تلقائي للصوت الرجالي الأعلى جودة)
+    val useCloudTts: Boolean = false,   // القارئ السحابي عالي الجودة (يحتاج مفتاحًا)
+    val cloudTtsKey: String = "",
+    val cloudTtsRegion: String = "westeurope",
+    val cloudTtsVoice: String = "ar-SA-HamedNeural",
     val lastManifestCheck: Long = 0,
     val dataVersion: String = "",
     val storageExternal: Boolean = false,
     val libraryTab: Int = 0,
-    val nasBase: String = "",   // عنوان بديل للخادم (مثل عنوان الشبكة الداخلية)؛ فارغ = الافتراضي
+    val nasBase: String = "",           // عنوان بديل للخادم (مثل عنوان الشبكة الداخلية)؛ فارغ = الافتراضي
+    val backupUri: String = "",         // مجلد النسخ الاحتياطي الخارجي للكتب (SAF tree uri)؛ فارغ = غير مفعَّل
 )
 
 class Settings(context: Context) {
@@ -54,11 +63,20 @@ class Settings(context: Context) {
         searchInFoot = prefs.getBoolean("searchInFoot", true),
         searchInTitles = prefs.getBoolean("searchInTitles", false),
         searchByRoot = prefs.getBoolean("searchByRoot", false),
+        autoTashkeel = prefs.getBoolean("autoTashkeel", false),
+        ttsRate = prefs.getFloat("ttsRate", 1.0f),
+        ttsPitch = prefs.getFloat("ttsPitch", 0.85f),
+        ttsVoice = prefs.getString("ttsVoice", "") ?: "",
+        useCloudTts = prefs.getBoolean("useCloudTts", false),
+        cloudTtsKey = prefs.getString("cloudTtsKey", "") ?: "",
+        cloudTtsRegion = prefs.getString("cloudTtsRegion", "westeurope") ?: "westeurope",
+        cloudTtsVoice = prefs.getString("cloudTtsVoice", "ar-SA-HamedNeural") ?: "ar-SA-HamedNeural",
         lastManifestCheck = prefs.getLong("lastManifestCheck", 0),
         dataVersion = prefs.getString("dataVersion", "") ?: "",
         storageExternal = prefs.getBoolean("storageExternal", false),
         libraryTab = prefs.getInt("libraryTab", 0),
         nasBase = prefs.getString("nasBase", "") ?: "",
+        backupUri = prefs.getString("backupUri", "") ?: "",
     )
 
     fun update(block: (AppSettings) -> AppSettings) {
@@ -81,11 +99,20 @@ class Settings(context: Context) {
             .putBoolean("searchInFoot", s.searchInFoot)
             .putBoolean("searchInTitles", s.searchInTitles)
             .putBoolean("searchByRoot", s.searchByRoot)
+            .putBoolean("autoTashkeel", s.autoTashkeel)
+            .putFloat("ttsRate", s.ttsRate)
+            .putFloat("ttsPitch", s.ttsPitch)
+            .putString("ttsVoice", s.ttsVoice)
+            .putBoolean("useCloudTts", s.useCloudTts)
+            .putString("cloudTtsKey", s.cloudTtsKey)
+            .putString("cloudTtsRegion", s.cloudTtsRegion)
+            .putString("cloudTtsVoice", s.cloudTtsVoice)
             .putLong("lastManifestCheck", s.lastManifestCheck)
             .putString("dataVersion", s.dataVersion)
             .putBoolean("storageExternal", s.storageExternal)
             .putInt("libraryTab", s.libraryTab)
             .putString("nasBase", s.nasBase)
+            .putString("backupUri", s.backupUri)
             .apply()
     }
 }

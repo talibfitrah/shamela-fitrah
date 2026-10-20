@@ -5,3 +5,8 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+-keep class com.tom_roush.pdfbox.** { *; }
+-dontwarn com.tom_roush.**
+-dontwarn org.bouncycastle.**
+-dontwarn com.gemalto.**
