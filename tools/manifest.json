@@ -1,31 +1,32 @@
 {
   "format": "shamela-nas-manifest",
   "version": 1,
-  "generated": "2026-09-13T19:19:48Z",
+  "generated": "2026-10-20T18:56:09Z",
   "app": {
-    "version_code": 11,
-    "version_name": "1.2.0",
-    "apk": "https://files.murabbie.org/fsdownload/BVnz9kUAx/shamela-1.2.0-universal.apk",
-    "apk_page": "https://files.murabbie.org/sharing/BVnz9kUAx",
-    "notes": "إخراج الكتاب أو الفصل أو نطاق صفحات أو الصفحة إلى Word (docx بخط Traditional Arabic وعناوين Heading) أو PDF، من قائمة القارئ ومن بطاقة الكتاب",
+    "version_code": 21,
+    "version_name": "1.5.1",
+    "commit": "6b726900a8acd5b41ca38115ce96915d9086b62e",
+    "apk": "https://files.murabbie.org/fsdownload/Yb3v3GVlK/shamela-1.5.1-universal.apk",
+    "apk_page": "https://files.murabbie.org/sharing/Yb3v3GVlK",
+    "notes": "إصلاحات نسخة Google Play: عودة تنزيل معجم التشكيل الآلي، وإصلاح توقّف تنزيل قاعدة الخدمات عند مغادرة الشاشة، وتسريع مجلد حفظ الكتب، وحماية مفتاح القارئ السحابي، ودعم أندرويد ١٦",
     "apks": {
-      "shamela-1.2.0-arm32.apk": {
-        "url": "https://files.murabbie.org/fsdownload/zsN8gQqNt/shamela-1.2.0-arm32.apk",
-        "page": "https://files.murabbie.org/sharing/zsN8gQqNt",
-        "size": 5834502,
-        "sha256": "7d2ac02e44c60c04c770c3ad7cbbe0d30ee6515d25793fbe65bdb50f661d7035"
+      "shamela-1.5.1-arm32.apk": {
+        "url": "https://files.murabbie.org/fsdownload/KZ7Cd3PBy/shamela-1.5.1-arm32.apk",
+        "page": "https://files.murabbie.org/sharing/KZ7Cd3PBy",
+        "size": 12296923,
+        "sha256": "35b9b8a83462831b3188fa2418755711c20ac30b1b197d11f447eaf2af5ff0e5"
       },
-      "shamela-1.2.0-arm64.apk": {
-        "url": "https://files.murabbie.org/fsdownload/yciZrfpms/shamela-1.2.0-arm64.apk",
-        "page": "https://files.murabbie.org/sharing/yciZrfpms",
-        "size": 6250390,
-        "sha256": "630bef1a91fd2a602126af82affe6274a5f934a04981352d4e733e3d5b84da79"
+      "shamela-1.5.1-arm64.apk": {
+        "url": "https://files.murabbie.org/fsdownload/EGt2Pqpep/shamela-1.5.1-arm64.apk",
+        "page": "https://files.murabbie.org/sharing/EGt2Pqpep",
+        "size": 12712811,
+        "sha256": "fb4689e07b96e13adac97a3caf67c1900dd92e0b7e85828d9104f67bb2c85235"
       },
-      "shamela-1.2.0-universal.apk": {
-        "url": "https://files.murabbie.org/fsdownload/BVnz9kUAx/shamela-1.2.0-universal.apk",
-        "page": "https://files.murabbie.org/sharing/BVnz9kUAx",
-        "size": 11903673,
-        "sha256": "376357cb336adec857e29ebfae96ec80e96ed0635e6e19a32670ede950e36630"
+      "shamela-1.5.1-universal.apk": {
+        "url": "https://files.murabbie.org/fsdownload/Yb3v3GVlK/shamela-1.5.1-universal.apk",
+        "page": "https://files.murabbie.org/sharing/Yb3v3GVlK",
+        "size": 18366094,
+        "sha256": "c8e35747f223ebd27041670dbf78a914a7bec08c2f06d718f1dc17d06af3697e"
       }
     }
   },
@@ -65,6 +66,14 @@
       "page": "https://files.murabbie.org/sharing/qRj62kwSq",
       "raw_size": 224702464,
       "path": "/downloads/shamela/services.db.gz"
+    },
+    "tashkeel": {
+      "size": 43798779,
+      "sha256": "ede8a3bf4aef9f42b5e6522efdcaf76582086806c45e12963e6d612b59b2cb6a",
+      "url": "https://files.murabbie.org/fsdownload/Ige830pQu/tashkeel.db.gz",
+      "page": "https://files.murabbie.org/sharing/Ige830pQu",
+      "raw_size": 121966592,
+      "path": "/downloads/shamela/tashkeel.db.gz"
     }
   },
   "site": {
