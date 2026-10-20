@@ -7,9 +7,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -32,7 +35,7 @@ data class DownloadJob(
 )
 
 /** إحصاء إجمالي للطابور (لعرضه دون الاحتفاظ بآلاف المهام في الواجهة). */
-data class BulkStats(val queued: Int = 0, val active: Int = 0, val done: Int = 0, val error: Int = 0, val paused: Int = 0) {
+data class BulkStats(val queued: Int = 0, val active: Int = 0, val done: Int = 0, val error: Int = 0, val paused: Int = 0, val isPaused: Boolean = false) {
     val pendingTotal: Int get() = queued + active
 }
 
@@ -75,16 +78,17 @@ class Downloads(private val context: Context, private val library: Library, priv
 
     fun jobFor(id: Int): DownloadJob? = _jobs.value[id]
 
-    fun isActive(): Boolean = synchronized(lock) { pending.isNotEmpty() || _jobs.value.values.any { it.status == JobStatus.DOWNLOADING || it.status == JobStatus.INSTALLING } }
+    fun isActive(): Boolean = synchronized(lock) { (!paused && pending.isNotEmpty()) || _jobs.value.values.any { it.status == JobStatus.DOWNLOADING || it.status == JobStatus.INSTALLING } }
 
-    private fun putJob(job: DownloadJob) { _jobs.value = LinkedHashMap(_jobs.value).apply { put(job.bookId, job) } }
-    private fun updateJob(id: Int, f: (DownloadJob) -> DownloadJob) { val cur = _jobs.value[id] ?: return; putJob(f(cur)) }
-    private fun removeJob(id: Int) { _jobs.value = LinkedHashMap(_jobs.value).apply { remove(id) } }
+    private fun putJob(job: DownloadJob) { _jobs.update { LinkedHashMap(it).apply { put(job.bookId, job) } } }
+    private fun updateJob(id: Int, f: (DownloadJob) -> DownloadJob) { _jobs.update { m -> val cur = m[id] ?: return; LinkedHashMap(m).apply { put(id, f(cur)) } } }
+    private fun removeJob(id: Int) { _jobs.update { LinkedHashMap(it).apply { remove(id) } } }
+    private fun nextSeq(): Long = synchronized(lock) { seq++ }
 
-    private fun refreshBulk() {
+    private fun refreshBulk() = synchronized(lock) {
         val active = _jobs.value.values.count { it.status == JobStatus.DOWNLOADING || it.status == JobStatus.INSTALLING }
-        val paused = _jobs.value.values.count { it.status == JobStatus.PAUSED }
-        _bulk.value = BulkStats(queued = synchronized(lock) { pending.size }, active = active, done = doneCount, error = errorCount, paused = paused)
+        val pausedJobs = _jobs.value.values.count { it.status == JobStatus.PAUSED }
+        _bulk.value = BulkStats(queued = pending.size, active = active, done = doneCount, error = errorCount, paused = pausedJobs, isPaused = paused && pending.isNotEmpty())
     }
 
     fun enqueue(book: Book, source: JobSource = if (book.file != null && book.file.pack.isNotBlank()) JobSource.NAS else JobSource.WEB) {
@@ -96,8 +100,8 @@ class Downloads(private val context: Context, private val library: Library, priv
             if (source == JobSource.WEB) webBooks[book.id] = book
             pending.addLast(book.id); pendingSet.add(book.id)
         }
-        putJob(DownloadJob(book.id, book.name, source, JobStatus.QUEUED, order = seq++))
-        _queued.value = _queued.value + book.id
+        putJob(DownloadJob(book.id, book.name, source, JobStatus.QUEUED, order = nextSeq()))
+        _queued.update { it + book.id }
         paused = false
         ensureWorkers()
         refreshBulk()
@@ -116,7 +120,7 @@ class Downloads(private val context: Context, private val library: Library, priv
             }
         }
         if (added.isEmpty()) return
-        _queued.value = _queued.value + added
+        _queued.update { it + added }
         paused = false
         ensureWorkers()
         refreshBulk()
@@ -134,26 +138,31 @@ class Downloads(private val context: Context, private val library: Library, priv
     private suspend fun workerLoop() {
         while (!paused) {
             val id = nextId() ?: break
-            _queued.value = _queued.value - id
-            refreshBulk()
-            waitForNetwork(id)
-            if (paused) { markPaused(id); break }
-            onActivity(true)
-            val book = webBooks[id] ?: library.book(id)
-            if (book == null) { errorCount++; updateJob(id) { it.copy(status = JobStatus.ERROR, message = "الكتاب غير موجود في الفهرس") }; refreshBulk(); continue }
             try {
-                if (_jobs.value[id] == null) putJob(DownloadJob(id, book.name, if (webBooks.containsKey(id)) JobSource.WEB else JobSource.NAS, JobStatus.DOWNLOADING, order = seq++))
+                val hadRow = _jobs.value[id] != null
+                _queued.update { it - id }
+                refreshBulk()
+                waitForNetwork(id)
+                if (paused) { markPaused(id); break }
+                if (hadRow && _jobs.value[id] == null) continue  // أُلغيت أثناء انتظار الشبكة
+                if (library.isInstalled(id)) { synchronized(lock) { doneCount++ }; updateJob(id) { it.copy(status = JobStatus.DONE, message = "") }; library.bumpInstalled(); refreshBulk(); continue }
+                onActivity(true)
+                val book = webBooks[id] ?: library.book(id)
+                if (book == null) { synchronized(lock) { errorCount++ }; updateJob(id) { it.copy(status = JobStatus.ERROR, message = "الكتاب غير موجود في الفهرس") }; refreshBulk(); continue }
+                if (_jobs.value[id] == null) putJob(DownloadJob(id, book.name, if (webBooks.containsKey(id)) JobSource.WEB else JobSource.NAS, JobStatus.DOWNLOADING, order = nextSeq()))
                 if (book.file != null && book.file.pack.isNotBlank()) downloadFromNas(book) else downloadFromWeb(book)
-                doneCount++
+                synchronized(lock) { doneCount++ }
                 updateJob(id) { it.copy(status = JobStatus.DONE, message = "") }
                 library.bumpInstalled()
                 webBooks.remove(id)
                 // إزالة المهام المكتملة القديمة من الواجهة لإبقائها خفيفة (نُبقي آخر ٣٠)
                 pruneDone()
             } catch (e: kotlinx.coroutines.CancellationException) {
-                markPaused(id); break
+                // أُلغي العامل (إيقاف مؤقت) → أعِده للطابور؛ وإلا فالمستخدم ألغى هذه المهمة وحدها
+                if (!currentCoroutineContext().isActive) { markPaused(id); break }
+                deleteTmp(id)
             } catch (e: Exception) {
-                errorCount++
+                synchronized(lock) { errorCount++ }
                 updateJob(id) { it.copy(status = JobStatus.ERROR, message = e.message ?: "خطأ") }
             }
             refreshBulk()
@@ -165,15 +174,18 @@ class Downloads(private val context: Context, private val library: Library, priv
     private fun markPaused(id: Int) {
         // أعِد المعرّف إلى الطابور ليُستأنف لاحقًا
         synchronized(lock) { if (id !in pendingSet) { pending.addFirst(id); pendingSet.add(id) } }
-        _queued.value = _queued.value + id
+        _queued.update { it + id }
         updateJob(id) { it.copy(status = JobStatus.PAUSED) }
     }
 
+    private fun deleteTmp(id: Int) { for (n in listOf("$id.db.gz", "$id.db.tmp", "$id.web.db")) File(library.tmpDir, n).delete() }
+
     private fun pruneDone() {
-        val done = _jobs.value.values.filter { it.status == JobStatus.DONE }.sortedBy { it.order }
-        if (done.size > 30) {
+        _jobs.update { m ->
+            val done = m.values.filter { it.status == JobStatus.DONE }.sortedBy { it.order }
+            if (done.size <= 30) return
             val drop = done.take(done.size - 30).map { it.bookId }.toSet()
-            _jobs.value = LinkedHashMap(_jobs.value).apply { keys.removeAll(drop) }
+            LinkedHashMap(m).apply { keys.removeAll(drop) }
         }
     }
 
@@ -204,8 +216,9 @@ class Downloads(private val context: Context, private val library: Library, priv
         val free = library.freeSpace()
         if (free in 0 until need) throw IllegalStateException("المساحة الحرة لا تكفي (${ArabicText.formatSize(free)})")
         updateJob(id) { it.copy(status = JobStatus.DOWNLOADING, bytes = 0, total = f.length, message = "") }
-        val onProg: suspend (Long, Long) -> Unit = { b, t -> updateJob(id) { it.copy(status = JobStatus.DOWNLOADING, bytes = b, total = t) } }
+        val onProg: suspend (Long, Long) -> Unit = { b, t -> if (_jobs.value[id] == null) throw kotlinx.coroutines.CancellationException("أُلغي"); updateJob(id) { it.copy(status = JobStatus.DOWNLOADING, bytes = b, total = t) } }
         NasHttp.downloadRange(pack.url, gz, f.offset, f.length, onProgress = onProg)
+        if (_jobs.value[id] == null) throw kotlinx.coroutines.CancellationException("أُلغي")
         updateJob(id) { it.copy(status = JobStatus.INSTALLING, message = "التحقق من الملف…") }
         val h = NasHttp.sha256(gz)
         if (f.sha256.isNotBlank() && !h.equals(f.sha256, true)) { gz.delete(); throw IllegalStateException("بصمة الملف لا تطابق؛ أعد المحاولة") }
@@ -228,7 +241,7 @@ class Downloads(private val context: Context, private val library: Library, priv
         val dest = library.bookFile(id)
         val tmp = File(library.tmpDir, "$id.web.db")
         updateJob(id) { it.copy(status = JobStatus.DOWNLOADING, bytes = 0, total = -1, message = "جلب الكتاب من shamela.ws") }
-        ShamelaWeb.importBook(id, tmp) { done, total, msg -> updateJob(id) { it.copy(status = JobStatus.DOWNLOADING, bytes = done.toLong(), total = total.toLong(), message = msg) } }
+        ShamelaWeb.importBook(id, tmp) { done, total, msg -> if (_jobs.value[id] == null) throw kotlinx.coroutines.CancellationException("أُلغي"); updateJob(id) { it.copy(status = JobStatus.DOWNLOADING, bytes = done.toLong(), total = total.toLong(), message = msg) } }
         if (dest.exists()) dest.delete()
         if (!tmp.renameTo(dest)) { tmp.copyTo(dest, true); tmp.delete() }
         onWebImported(id, dest)
@@ -237,16 +250,15 @@ class Downloads(private val context: Context, private val library: Library, priv
     fun cancel(id: Int) {
         synchronized(lock) { pending.remove(id); pendingSet.remove(id) }
         webBooks.remove(id)
-        _queued.value = _queued.value - id
+        _queued.update { it - id }
         removeJob(id)
-        File(library.tmpDir, "$id.db.gz").delete()
-        File(library.tmpDir, "$id.web.db").delete()
+        deleteTmp(id)
         refreshBulk()
         onActivity(isActive())
     }
 
     fun retry(book: Book) {
-        errorCount = (errorCount - 1).coerceAtLeast(0)
+        synchronized(lock) { errorCount = (errorCount - 1).coerceAtLeast(0); if (pending.remove(book.id)) pendingSet.remove(book.id) }
         removeJob(book.id)
         enqueue(book)
     }
@@ -263,33 +275,35 @@ class Downloads(private val context: Context, private val library: Library, priv
         if (!nas) webBooks[book.id] = book
         // أزِله من الطابور إن كان فيه (سنُنزّله الآن مباشرة)
         synchronized(lock) { if (pending.remove(book.id)) pendingSet.remove(book.id) }
-        _queued.value = _queued.value - book.id
+        _queued.update { it - book.id }
         if (existing?.status == JobStatus.DOWNLOADING || existing?.status == JobStatus.INSTALLING) {
             // جارٍ فعلًا: انتظر حتى ينتهي
             while (!library.isInstalled(book.id)) {
                 val j = _jobs.value[book.id] ?: break
-                if (j.status == JobStatus.ERROR) return false
+                if (j.status == JobStatus.ERROR || j.status == JobStatus.PAUSED) return false
                 delay(400)
             }
             return library.isInstalled(book.id)
         }
-        putJob(DownloadJob(book.id, book.name, if (nas) JobSource.NAS else JobSource.WEB, JobStatus.DOWNLOADING, order = seq++))
+        putJob(DownloadJob(book.id, book.name, if (nas) JobSource.NAS else JobSource.WEB, JobStatus.DOWNLOADING, order = nextSeq()))
         onActivity(true)
         return try {
             if (nas) downloadFromNas(book) else downloadFromWeb(book)
-            doneCount++; updateJob(book.id) { it.copy(status = JobStatus.DONE, message = "") }
+            synchronized(lock) { doneCount++ }; updateJob(book.id) { it.copy(status = JobStatus.DONE, message = "") }
             library.bumpInstalled(); pruneDone(); refreshBulk(); true
         } catch (e: kotlinx.coroutines.CancellationException) {
-            updateJob(book.id) { it.copy(status = JobStatus.PAUSED) }; throw e
+            // المستدعي ما زال حيًّا → المستخدم ألغى هذه المهمة؛ وإلا فقد غادر القارئ
+            if (currentCoroutineContext().isActive) { deleteTmp(book.id); refreshBulk(); false }
+            else { updateJob(book.id) { it.copy(status = JobStatus.PAUSED) }; throw e }
         } catch (e: Exception) {
-            errorCount++; updateJob(book.id) { it.copy(status = JobStatus.ERROR, message = e.message ?: "خطأ") }; refreshBulk(); false
+            synchronized(lock) { errorCount++ }; updateJob(book.id) { it.copy(status = JobStatus.ERROR, message = e.message ?: "خطأ") }; refreshBulk(); false
         } finally { onActivity(isActive()) }
     }
 
     fun pauseAll() {
         paused = true
         synchronized(lock) { workers.forEach { it.cancel() }; workers.clear() }
-        _jobs.value = LinkedHashMap(_jobs.value).mapValues { (_, j) -> if (j.status == JobStatus.DOWNLOADING || j.status == JobStatus.INSTALLING) j.copy(status = JobStatus.PAUSED) else j }
+        _jobs.update { m -> m.mapValues { (_, j) -> if (j.status == JobStatus.DOWNLOADING || j.status == JobStatus.INSTALLING) j.copy(status = JobStatus.PAUSED) else j } }
         refreshBulk()
         onActivity(false)
     }
@@ -301,16 +315,16 @@ class Downloads(private val context: Context, private val library: Library, priv
         synchronized(lock) {
             for (id in toResume) if (id !in pendingSet) { pending.addLast(id); pendingSet.add(id) }
         }
-        if (toResume.isNotEmpty()) _queued.value = _queued.value + toResume
-        _jobs.value = LinkedHashMap(_jobs.value).mapValues { (_, j) -> if (j.status == JobStatus.PAUSED || j.status == JobStatus.ERROR) j.copy(status = JobStatus.QUEUED, message = "") else j }
-        errorCount = 0
+        if (toResume.isNotEmpty()) _queued.update { it + toResume }
+        _jobs.update { m -> m.mapValues { (_, j) -> if (j.status == JobStatus.PAUSED || j.status == JobStatus.ERROR) j.copy(status = JobStatus.QUEUED, message = "") else j } }
+        synchronized(lock) { errorCount = 0 }
         ensureWorkers()
         refreshBulk()
     }
 
     fun clearFinished() {
-        _jobs.value = LinkedHashMap(_jobs.value).filterValues { it.status != JobStatus.DONE }
-        doneCount = 0
+        _jobs.update { m -> m.filterValues { it.status != JobStatus.DONE } }
+        synchronized(lock) { doneCount = 0 }
         refreshBulk()
     }
 

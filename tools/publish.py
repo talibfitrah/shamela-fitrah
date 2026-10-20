@@ -35,14 +35,15 @@ def upload_and_share(nas, st, local, name=None, force=False):
             print(f"  {name} غير موجود محليًا لكنه على NAS بالحجم المسجَّل — يُعاد استعماله")
             return prev
         raise FileNotFoundError(local)
-    size = os.path.getsize(local)
-    if existing != size or force:
+    size = os.path.getsize(local); sha = sha256_file(local)
+    # الحجم نفسه لا يعني المحتوى نفسه: يُعاد الرفع إن اختلفت البصمة المسجَّلة (أو لم تُسجَّل)
+    if existing != size or force or (st["files"].get(name) or {}).get("sha256") != sha:
         print(f"  رفع {name} ({size/1e6:.1f} MB)…", flush=True)
         nas.upload(local, st["dir"], name)
     else:
         print(f"  {name} موجود بالحجم نفسه — تخطٍّ", flush=True)
     link = nas.share(remote)
-    st["files"][name] = {"size": size, "sha256": sha256_file(local), "url": link["url"], "page": link["page"], "id": link["id"], "updated": time.strftime("%Y-%m-%d")}
+    st["files"][name] = {"size": size, "sha256": sha, "url": link["url"], "page": link["page"], "id": link["id"], "updated": time.strftime("%Y-%m-%d")}
     save_state(st)
     return st["files"][name]
 
@@ -67,7 +68,14 @@ def build_manifest(st):
             m["data"][f] = {k: v for k, v in m["data"][f].items() if k in ("url", "page", "path", "size", "sha256", "raw_size")}
     return m
 
-def push_manifest(nas, st):
+def require_data(st):
+    """يرفض نشر manifest بلا كتب: حالة فارغة (publish_state.json مفقود) تُفقد كل التطبيقات المثبَّتة books.pack"""
+    if not st["packs"] or "master.db.gz" not in st["files"]:
+        raise SystemExit("رفض: الحالة المحلية بلا packs أو master.db.gz — publish_state.json مفقود أو ناقص. انسخه من NAS إلى tools/ قبل النشر (نشر manifest فارغ يعطّل كل التطبيقات المثبَّتة).")
+
+def push_manifest(nas, st, empty_ok=False):
+    if not empty_ok:
+        require_data(st)
     m = build_manifest(st)
     local = os.path.join(os.path.dirname(STATE), "manifest.json")
     json.dump(m, open(local, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
@@ -86,17 +94,32 @@ def main():
     nas = Nas(); nas.login()
     st = load_state()
     cmd = a[0]
+    if cmd in ("app", "services", "manifest"):
+        require_data(st)  # قبل أي رفع: لا يُستبدل APK أو services.db.gz ثم يُرفض manifest
+    if cmd == "data" and not os.path.exists(STATE) and "manifest.json" in nas.list(st["dir"]):
+        raise SystemExit("رفض: publish_state.json مفقود وعلى NAS manifest منشور — النشر الآن يمحو app وservices من manifest. انسخ الحالة من NAS أولًا.")
     if cmd == "init":
         nas.mkdir(st["dir"])
         if "manifest_url" not in st:
             local = os.path.join(os.path.dirname(STATE), "manifest.json")
             if not os.path.exists(local):
                 json.dump({"format": "shamela-nas-manifest", "version": 1, "app": {}, "data": {}}, open(local, "w"))
-        push_manifest(nas, st)
+        # manifest فارغ مسموح فقط لمجلد NAS جديد لم يُنشر فيه manifest بعد
+        push_manifest(nas, st, empty_ok="manifest.json" not in nas.list(st["dir"]))
     elif cmd == "data":
         outdir, master = a[1], a[2]
         version = a[a.index("--version") + 1] if "--version" in a else time.strftime("%Y%m%d")
         idx = json.load(open(os.path.join(outdir, "index.json"), encoding="utf-8"))
+        # قبل أي رفع: حزمة محلية تالفة بالحجم نفسه كانت ستستبدل السليمة على NAS ثم يُرفض النشر
+        remote = nas.list(st["dir"])
+        for p in idx["packs"]:
+            lp = os.path.join(outdir, "packs", p["file"])
+            prev = st["files"].get(p["file"])
+            if os.path.exists(lp):
+                if sha256_file(lp) != p["sha256"]:
+                    raise SystemExit(f"بصمة الحزمة {p['file']} لا تطابق index.json — لم يُرفع شيء")
+            elif not prev or prev.get("sha256") != p["sha256"] or remote.get(p["file"]) != prev.get("size"):
+                raise SystemExit(f"الحزمة {p['file']} غير موجودة محليًا ولا مطابقة على NAS — لم يُرفع شيء")
         gz = master + ".gz"
         with open(master, "rb") as i, gzip.open(gz, "wb", compresslevel=9) as o:
             shutil.copyfileobj(i, o)

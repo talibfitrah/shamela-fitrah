@@ -62,7 +62,7 @@ fun LibraryScreen(app: App, nav: NavHostController) {
     var tab by remember { mutableStateOf(settings.libraryTab.coerceIn(0, libraryTabs.size - 1)) }
     val manifest by app.library.manifest.collectAsState()
     val dataUpdate = app.library.dataUpdateAvailable()
-    val appUpdate = (manifest?.appVersionCode ?: 0) > org.murabbie.shamela.BuildConfig.VERSION_CODE
+    val appUpdate = !org.murabbie.shamela.BuildConfig.PLAY_STORE && (manifest?.appVersionCode ?: 0) > org.murabbie.shamela.BuildConfig.VERSION_CODE
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(title = { Text("المكتبة الشاملة") }, actions = {

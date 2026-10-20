@@ -1,6 +1,6 @@
 # المكتبة الشاملة — نسخة الأندرويد: دليل المبرمج للتسليم والنشر
 
-الإصدار المسلَّم: 1.2.0 (versionCode 11) — الحزمة: `org.murabbie.shamela` — تاريخ التسليم: ١٤ / ٩ / ٢٠٢٦.
+الإصدار الحالي: 1.2.1 (versionCode 12؛ المسلَّم أصلًا 1.2.0 / 11) — الحزمة: `org.murabbie.shamela` — تاريخ التسليم: ١٤ / ٩ / ٢٠٢٦.
 
 هذا الدليل يكفي مبرمجًا لم يرَ المشروع من قبل ليبنيه ويطوّره وينشره على Google Play. اقرأه كاملًا قبل أي تعديل.
 
@@ -42,7 +42,7 @@
 
 ### الخادم (NAS)
 
-Synology DSM؛ المجلد `/downloads/shamela`؛ الواجهة `https://files.murabbie.org` (وبديل `http://nas.fitrahmedia.nl:5000`). روابط المشاركة على مسار `/fsdownload/<id>/<name>` وتحتاج قبلها إلى زيارة `/sharing/<id>` لأخذ كعكة `sharing_sid`؛ **ويجب أن يكون الطلبان على اتصال TCP واحد** وإلا ردّ الخادم 404 متقطعًا (عاملا DSM مختلفان). `NasHttp.kt` يفعل ذلك (عميل OkHttp مخصَّص لكل عملية مع مخزن كعكات في الذاكرة). لا تغيّر هذا السلوك.
+Synology DSM؛ المجلد `/downloads/shamela`؛ الواجهة `https://files.murabbie.org` (HTTPS فقط؛ أُزيل البديل `http://nas.fitrahmedia.nl:5000` لأنه يتيح تزوير manifest على الشبكة، وهو العنوان نفسه فلا يضيف توفّرًا). روابط المشاركة على مسار `/fsdownload/<id>/<name>` وتحتاج قبلها إلى زيارة `/sharing/<id>` لأخذ كعكة `sharing_sid`؛ **ويجب أن يكون الطلبان على اتصال TCP واحد** وإلا ردّ الخادم 404 متقطعًا (عاملا DSM مختلفان). `NasHttp.kt` يفعل ذلك (عميل OkHttp مخصَّص لكل عملية مع مخزن كعكات في الذاكرة). لا تغيّر هذا السلوك.
 
 الرفع إلى الخادم يتم من `tools/publish.py` عبر DSM WebAPI بحساب رفع (يُطلب من صاحب المشروع؛ ليس في التطبيق ولا في هذه الحزمة).
 
@@ -50,7 +50,7 @@ Synology DSM؛ المجلد `/downloads/shamela`؛ الواجهة `https://files
 
 ## ٣. بناء التطبيق
 
-المتطلبات: Android Studio (Ladybug أو أحدث)، JDK 17، Android SDK 35، Gradle 8.14 (المشروع بلا wrapper؛ Android Studio يستعمل نسخته أو ثبّت gradle).
+المتطلبات: Android Studio (Ladybug أو أحدث)، JDK 17، Android SDK 36 (AGP 8.9.3)، Gradle 8.14 (المشروع بلا wrapper؛ Android Studio يستعمل نسخته أو ثبّت gradle).
 
 1. افتح `android/` في Android Studio.
 2. انسخ `signing/shamela-release.keystore` إلى جذر `android/` وانسخ `signing/keystore.properties` إلى جذر `android/` (المسار فيه `../shamela-release.keystore` نسبةً إلى مجلد app — أو عدّل `storeFile`).
@@ -60,6 +60,7 @@ Synology DSM؛ المجلد `/downloads/shamela`؛ الواجهة `https://files
 4. الأوامر:
    - APK للتوزيع المباشر: `gradle assembleNasRelease` → `app/build/outputs/apk/nas/release/`
    - حزمة Google Play: `gradle bundlePlayRelease` → `app/build/outputs/bundle/playRelease/app-play-release.aab`
+   - شغّل أمرَي `assemble` و`bundle` في استدعاءين منفصلين: تقسيم المعماريات (`splits.abi`) يُعطَّل تلقائيًا متى طُلبت مهمة `bundle` (الحزمة تقسّم بنفسها، والجمع بينهما يُفشل AGP)، فالجمع في استدعاء واحد يُنتج APK واحدًا لنكهة nas بلا ملفات arm64/arm32/universal التي ينتظرها `publish.py app`.
 5. التوقيع تلقائي من `keystore.properties` (release). `minifyEnabled=true` مع R8؛ قواعد ProGuard في `app/proguard-rules.pro`.
 
 رقم الإصدار في `app/build.gradle.kts` (`versionCode`, `versionName`) — زده مع كل نشر.
@@ -113,11 +114,11 @@ Synology DSM؛ المجلد `/downloads/shamela`؛ الواجهة `https://files
 
 ## ٦. النشر على Google Play — خطوات
 
-1. **حساب مطوّر** على Play Console (رسم لمرة واحدة) وإنشاء تطبيق جديد باسم «المكتبة الشاملة» (أو الاسم الذي يختاره صاحب المشروع)، اللغة الافتراضية: العربية.
+1. **حساب مطوّر** على Play Console (رسم لمرة واحدة) وإنشاء تطبيق جديد، اللغة الافتراضية: العربية. **أُرسل للمراجعة** في ٢٦ سبتمبر ٢٠٢٦ باسم «المكتبة الشاملة — قارئ مستقل» من حساب Stichting Tarbiyah Consultancy؛ لا تستعمل «المكتبة الشاملة» وحدها فهو عنوان التطبيق الرسمي (com.arabdt.shamla) وقد يُرفض التطبيق بسياسة انتحال الهوية. الخطوات المجرَّبة كاملة: `~/Development/PLAY-STORE-PUBLISHING-GUIDE.md`.
 2. **التوقيع**: عند أول رفع فعّل *Play App Signing* وارفع `app-play-release.aab` الموقَّع بمفتاح `signing/`. احفظ المفتاح: هو مفتاح الرفع (upload key) لكل الإصدارات اللاحقة.
 3. **الملف المرفوع**: دائمًا AAB من نكهة `play` (`gradle bundlePlayRelease`). لا ترفع نكهة `nas` (إذن تثبيت الحزم مرفوض في المتجر بلا مسوّغ).
 4. **قائمة المتجر**: النصوص في `play-store/listing.md`؛ يلزم أيقونة ٥١٢×٥١٢، صورة مميزة ١٠٢٤×٥٠٠، و٢–٨ لقطات شاشة للهاتف (خذها من التطبيق: المكتبة، القارئ، البحث، الخدمات).
-5. **سياسة الخصوصية**: يشترط المتجر رابطًا عامًا. النص في `play-store/privacy-policy.md`؛ انشره على صفحة في موقع صاحب المشروع (مثل murabbie.org) وضع رابطه في Play Console.
+5. **سياسة الخصوصية**: منشورة على https://opvoedconsult.com/shamela/privacy.html (المصدر `play-store/privacy/index.html`، والنص في `play-store/privacy-policy.md`). الرابط مكتوب أيضًا داخل التطبيق في `MoreScreens.kt` (بند «سياسة الخصوصية»)؛ يشترط المتجر وجوده في التطبيق وفي صفحة المتجر معًا، فإن نُقلت الصفحة فغيّر الموضعين وPlay Console.
 6. **سلامة البيانات (Data safety)**: الإجابات في `play-store/data-safety.md` (التطبيق لا يجمع ولا يشارك بيانات شخصية؛ الاتصال بالخادم لجلب الكتب فقط).
 7. **تصنيف المحتوى** (IARC): استبيان بسيط — تطبيق كتب/مرجع، لا محتوى حساسًا.
 8. **الفئة**: Books & Reference. **الجمهور**: ١٣+ (لا يستهدف الأطفال).
@@ -127,7 +128,7 @@ Synology DSM؛ المجلد `/downloads/shamela`؛ الواجهة `https://files
 ### ملاحظات امتثال
 
 - الأذونات في نكهة play: `INTERNET`, `ACCESS_NETWORK_STATE`, `WAKE_LOCK`, `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC` (للتنزيل في الخلفية؛ في نموذج الإعلان عن الخدمات الأمامية اختر «data sync: تنزيل ملفات يطلبها المستخدم» وأرفق فيديو قصيرًا إن طُلب)، `POST_NOTIFICATIONS`.
-- targetSdk = 35 (مطلوب المتجر ٣٥ فأعلى عام ٢٠٢٦).
+- targetSdk = 36 (يشترط المتجر ٣٦ فأعلى للتطبيقات الجديدة والتحديثات منذ ٣١ أغسطس ٢٠٢٦).
 - المحتوى: نصوص الكتب من المكتبة الشاملة (مشروع مفتوح). اذكر ذلك في وصف المتجر وفي «عن التطبيق».
 - التطبيق يشغّل خدمة أمامية للتنزيل بإشعار؛ لا إعلانات ولا مشتريات.
 

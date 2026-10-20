@@ -32,11 +32,11 @@ object NasHttp {
     const val UA = "Shamela-Android/1.0 (+https://murabbie.org)"
 
     /** المضيفون المحتملون للخادم بالترتيب؛ يُجرَّبون بالتناوب. الأول قد يُستبدل بعنوان يدخله المستخدم (شبكة داخلية). */
-    @Volatile var bases: List<String> = listOf("https://files.murabbie.org", "http://nas.fitrahmedia.nl:5000")
+    @Volatile var bases: List<String> = listOf("https://files.murabbie.org")
     fun setCustomBase(base: String?) {
         val b = base?.trim()?.trimEnd('/')
-        bases = if (b.isNullOrBlank()) listOf("https://files.murabbie.org", "http://nas.fitrahmedia.nl:5000")
-        else listOf(if (b.startsWith("http")) b else "http://$b", "https://files.murabbie.org", "http://nas.fitrahmedia.nl:5000")
+        bases = if (b.isNullOrBlank()) listOf("https://files.murabbie.org")
+        else listOf(if (b.startsWith("http")) b else "http://$b", "https://files.murabbie.org")
     }
 
     /** آخر حالة تشخيصية (تُعرض في شاشة الإعداد) */

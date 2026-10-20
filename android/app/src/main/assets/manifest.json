@@ -1,31 +1,31 @@
 {
   "format": "shamela-nas-manifest",
   "version": 1,
-  "generated": "2026-09-13T18:40:54Z",
+  "generated": "2026-09-13T19:19:48Z",
   "app": {
-    "version_code": 9,
-    "version_name": "1.1.0",
-    "apk": "https://files.murabbie.org/fsdownload/JsHjVCUgc/shamela-1.1.0-universal.apk",
-    "apk_page": "https://files.murabbie.org/sharing/JsHjVCUgc",
-    "notes": "خدمات الشاملة كما في ويندوز: تراجم الرواة (النقر على الراوي في الإسناد)، تخريج الحديث في الكتب العشرة، الأسانيد ومرويات الراوي، القرآن وتفسير الآية في ١٤ تفسيرًا، البحث بالجذر؛ وزر تنزيل المستجدات",
+    "version_code": 11,
+    "version_name": "1.2.0",
+    "apk": "https://files.murabbie.org/fsdownload/BVnz9kUAx/shamela-1.2.0-universal.apk",
+    "apk_page": "https://files.murabbie.org/sharing/BVnz9kUAx",
+    "notes": "إخراج الكتاب أو الفصل أو نطاق صفحات أو الصفحة إلى Word (docx بخط Traditional Arabic وعناوين Heading) أو PDF، من قائمة القارئ ومن بطاقة الكتاب",
     "apks": {
-      "shamela-1.1.0-arm32.apk": {
-        "url": "https://files.murabbie.org/fsdownload/veGkOh7lE/shamela-1.1.0-arm32.apk",
-        "page": "https://files.murabbie.org/sharing/veGkOh7lE",
-        "size": 5801638,
-        "sha256": "3028c4f71c776260b26ff8d2f2bb5e95fda592ebd39e472a2713dca035f1e952"
+      "shamela-1.2.0-arm32.apk": {
+        "url": "https://files.murabbie.org/fsdownload/zsN8gQqNt/shamela-1.2.0-arm32.apk",
+        "page": "https://files.murabbie.org/sharing/zsN8gQqNt",
+        "size": 5834502,
+        "sha256": "7d2ac02e44c60c04c770c3ad7cbbe0d30ee6515d25793fbe65bdb50f661d7035"
       },
-      "shamela-1.1.0-arm64.apk": {
-        "url": "https://files.murabbie.org/fsdownload/rMupd1IW5/shamela-1.1.0-arm64.apk",
-        "page": "https://files.murabbie.org/sharing/rMupd1IW5",
-        "size": 6217526,
-        "sha256": "f8b54e8d7b63d676fb89918f5d94a7ddb17e5bdf1c9c7637a923eff2ba3842e9"
+      "shamela-1.2.0-arm64.apk": {
+        "url": "https://files.murabbie.org/fsdownload/yciZrfpms/shamela-1.2.0-arm64.apk",
+        "page": "https://files.murabbie.org/sharing/yciZrfpms",
+        "size": 6250390,
+        "sha256": "630bef1a91fd2a602126af82affe6274a5f934a04981352d4e733e3d5b84da79"
       },
-      "shamela-1.1.0-universal.apk": {
-        "url": "https://files.murabbie.org/fsdownload/JsHjVCUgc/shamela-1.1.0-universal.apk",
-        "page": "https://files.murabbie.org/sharing/JsHjVCUgc",
-        "size": 11870809,
-        "sha256": "89df7035625983cde9ecda681b2b0b17aed9195ad71464f82fd7d9d524cb163e"
+      "shamela-1.2.0-universal.apk": {
+        "url": "https://files.murabbie.org/fsdownload/BVnz9kUAx/shamela-1.2.0-universal.apk",
+        "page": "https://files.murabbie.org/sharing/BVnz9kUAx",
+        "size": 11903673,
+        "sha256": "376357cb336adec857e29ebfae96ec80e96ed0635e6e19a32670ede950e36630"
       }
     }
   },

@@ -17,3 +17,6 @@ local.properties
 __pycache__/
 .idea/
 .DS_Store
+
+# local server credentials (never commit)
+.env

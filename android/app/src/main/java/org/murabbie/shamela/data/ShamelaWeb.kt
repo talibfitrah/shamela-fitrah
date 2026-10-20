@@ -128,8 +128,8 @@ object ShamelaWeb {
             var guard = 0
             while (guard++ < 200000) {
                 currentCoroutineContext().ensureActive()
-                val js = runCatching { NasHttp.fetchText("$site/ajax/pageContent/$bookId/$pageId", attempts = 4, browserUa = true) }.getOrNull() ?: break
-                val j = runCatching { JSONObject(js) }.getOrNull() ?: break
+                // فشل الجلب ليس نهاية الكتاب (النهاية غياب nextId): يُرفع الخطأ كي لا يُثبَّت كتاب مبتور
+                val j = JSONObject(NasHttp.fetchText("$site/ajax/pageContent/$bookId/$pageId", attempts = 10, browserUa = true))
                 val nass = j.optString("nass", "")
                 val num = j.optInt("pageNum", 0)
                 if (num in 1 until lastNum || part == null) {

@@ -63,7 +63,6 @@ class Services(private val library: Library) {
             val tmp = File(library.tmpDir, "services.db.tmp")
             GZIPInputStream(gz.inputStream().buffered(1 shl 16)).use { i -> tmp.outputStream().use { o -> i.copyTo(o, 1 shl 16) } }
             closeDb()
-            if (file.exists()) file.delete()
             if (!tmp.renameTo(file)) { tmp.copyTo(file, true); tmp.delete() }
             gz.delete()
             _state.value = ServicesState.Ready

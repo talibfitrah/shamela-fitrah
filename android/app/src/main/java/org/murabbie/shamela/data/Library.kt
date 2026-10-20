@@ -87,7 +87,6 @@ class Library(private val context: Context, val settings: Settings) {
                 GZIPInputStream(a.buffered(1 shl 16)).use { i -> tmp.outputStream().use { o -> i.copyTo(o, 1 shl 16) } }
             }
             closeMaster()
-            if (masterFile.exists()) masterFile.delete()
             if (!tmp.renameTo(masterFile)) { tmp.copyTo(masterFile, true); tmp.delete() }
             val ok = runCatching { db().count("select count(*) from book") > 0 }.getOrDefault(false)
             if (!ok) { closeMaster(); masterFile.delete(); return@withContext false }
@@ -111,7 +110,7 @@ class Library(private val context: Context, val settings: Settings) {
     // ---------- manifest ----------
 
     suspend fun fetchManifest(force: Boolean = false): Manifest {
-        NasHttp.setCustomBase(settings.value.nasBase)
+        NasHttp.setCustomBase(settings.value.nasBase.takeUnless { org.murabbie.shamela.BuildConfig.PLAY_STORE && !it.startsWith("https://") })
         val m = Manifest.parse(NasHttp.fetchText(settings.value.manifestUrl))
         _manifest.value = m
         runCatching { manifestCache.writeText(m.raw) }
@@ -141,7 +140,6 @@ class Library(private val context: Context, val settings: Settings) {
             val tmp = File(tmpDir, "master.db.tmp")
             GZIPInputStream(gz.inputStream().buffered(1 shl 16)).use { i -> tmp.outputStream().use { o -> i.copyTo(o, 1 shl 16) } }
             closeMaster()
-            if (masterFile.exists()) masterFile.delete()
             if (!tmp.renameTo(masterFile)) { tmp.copyTo(masterFile, true); tmp.delete() }
             gz.delete()
             settings.update { it.copy(dataVersion = m.dataVersion) }
