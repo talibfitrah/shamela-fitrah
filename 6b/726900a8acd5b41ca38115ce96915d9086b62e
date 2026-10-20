@@ -1,0 +1,156 @@
+android/app/src/main/assets/manifest.json
+  s_6f374043e4b35a::t_156475117e2a5e 4,6-10,12-16,18-22,24-28
+README-DEVELOPER.md
+  s_6f374043e4b35a::t_877d2dc0b709a1 45,53,63,117,121,131
+  s_6f374043e4b35a::t_d64b71c73fe505 3
+tools/update_from_web.py
+  s_6f374043e4b35a::t_877d2dc0b709a1 5,22,110,188-189,217
+jvmtest/build.gradle.kts
+  s_6f374043e4b35a::t_877d2dc0b709a1 13
+  s_6f374043e4b35a::t_0243cce69d89a1 17
+android/AGENTS.md
+  s_6f374043e4b35a::t_8c73de3f397ad9 1-29
+tools/publish.py
+  s_6f374043e4b35a::t_06ddb991a7bb3e 28-39
+  s_6f374043e4b35a::t_877d2dc0b709a1 77-79,85,112-119,140-141,153-154,168-177
+  s_6f374043e4b35a::t_a27d3892fac295 101-102,107
+  s_6f374043e4b35a::t_37e5b82771e986 137,139
+  s_6f374043e4b35a::t_d80f70f814b37d 52,55-56
+  s_6f374043e4b35a::t_debf94484449e1 43-45
+  s_6f374043e4b35a::t_2d3080371e1be7 151-152,161-163,218
+  s_6f374043e4b35a::t_11b5a00e476d69 200-205
+  s_6f374043e4b35a::t_6f5d01af4802f4 142
+  s_6f374043e4b35a::t_cdb849368bcd2d 9-11,40,53-54,143-150
+  s_6f374043e4b35a::t_180848e9ec7345 138
+  s_6f374043e4b35a::t_b4273a2c72e2e0 20-27,41-42,46-50,57
+  s_6f374043e4b35a::t_60952237cba096 51
+  s_6f374043e4b35a::t_1ec3dc1250fe99 15
+android/app/src/main/java/org/murabbie/shamela/data/NasHttp.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 35,38-39
+android/app/src/main/java/org/murabbie/shamela/ui/screens/SearchScreen.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 208,212
+tools/check_publish_guard.py
+  s_6f374043e4b35a::t_b81512d10bbd9a 49
+  s_6f374043e4b35a::t_718c1ae4295146 1-11,14,20-24,27-28,30,32-33,36,38-39,41-48,50-51,53-54,56,58,60,62-67,70,74-77,79-80,91,106,109-110,112-114,118-119
+  s_6f374043e4b35a::t_cbec9d4485f19d 115
+  s_6f374043e4b35a::t_c8576dc81460f2 61,68-69,78,84-85,87-90,93-94,105,108,111
+  s_6f374043e4b35a::t_65a240d8fffcea 92
+  s_6f374043e4b35a::t_0be31099c97c1e 25-26
+  s_6f374043e4b35a::t_9e147cca4565a0 71-73
+  s_6f374043e4b35a::t_084702a84c8c7b 120
+  s_6f374043e4b35a::t_b6537e13d06798 40
+  s_6f374043e4b35a::t_67de95141e0fc2 57
+  s_6f374043e4b35a::t_4df1cc4c838e4d 86
+  s_6f374043e4b35a::t_2d3080371e1be7 13,18-19,34-35,98-101
+  s_6f374043e4b35a::t_89f8a37686e67b 59
+  s_6f374043e4b35a::t_5649d14fa1e9b1 12,15-17
+  s_6f374043e4b35a::t_aa3d91e9709e62 31,97
+  s_6f374043e4b35a::t_6f5d01af4802f4 102-104
+  s_6f374043e4b35a::t_cbcb2c10bf7595 29,37,52,55,81-83,95-96,107,116-117
+play-store/privacy-policy.md
+  s_6f374043e4b35a::t_5fff15627a8890 27
+  s_6f374043e4b35a::t_678cdbed7b208a 5
+  s_6f374043e4b35a::t_877d2dc0b709a1 1,3,26
+  s_6f374043e4b35a::t_c84f39abc077ed 11-13,16-22
+  s_6f374043e4b35a::t_b2fc80d46aec93 4
+play-store/privacy/index.html
+  s_ea966bcbc97229::t_0988c2960abd72 1-17,19-43,47-51,57-58,66-71,73-85,89-93,99-100,108-113,115-127
+  s_6f374043e4b35a::t_ded764c204c7b9 72
+  s_ea966bcbc97229::t_14da9fc5e22633 18
+  s_6f374043e4b35a::t_a5642242d9d1f9 94-98,101-107
+  s_6f374043e4b35a::t_461674cf394d4f 114
+  s_ea966bcbc97229::t_0e270d6422fb78 44,46,86,88
+  s_6f374043e4b35a::t_934ab837abc172 45
+  s_6f374043e4b35a::t_68bcb84141c064 87
+  s_6f374043e4b35a::t_bb3ef301cbffa0 52-56,59-65
+android/app/src/main/java/org/murabbie/shamela/ui/screens/BookScreen.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 191-192,208
+android/app/src/main/java/org/murabbie/shamela/ui/AppRoot.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 3-5,17,91-92,110
+android/app/src/main/java/org/murabbie/shamela/data/ShamelaWeb.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 131-132
+.gitignore
+  s_6f374043e4b35a::t_a27d3892fac295 23-25
+  s_6f374043e4b35a::t_877d2dc0b709a1 20-22
+android/app/src/main/java/org/murabbie/shamela/ui/screens/DownloadsScreen.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 54-55,60,63,66
+android/app/src/main/java/org/murabbie/shamela/data/DownloadService.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 30,36-37,45,50-51
+  s_6f374043e4b35a::t_33ae89bf800b64 52
+play-store/listing.md
+  s_6f374043e4b35a::t_877d2dc0b709a1 4-6,23
+android/app/src/main/java/org/murabbie/shamela/ui/MainActivity.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 5,10-11,14-16,21,32-33,42-47,49,62
+android/app/src/main/java/org/murabbie/shamela/data/Downloads.kt
+  s_6f374043e4b35a::t_bf2917605d39e5 159-160,162-167
+  s_6f374043e4b35a::t_877d2dc0b709a1 10,14-15,38,94,96-99,101,103-104,116-117,136,155-157,168-175,177,184-186,188,200,204-205,207-209,211,242,244,267,276,278,284,301,306,311,315,318-320,322,329,341-343,349-350
+  s_6f374043e4b35a::t_aec58594e80d3f 84,158,161
+CLAUDE.md
+  s_6f374043e4b35a::t_e247ce58108da1 3,41,48-51,53-55
+  s_6f374043e4b35a::t_68eec12ddfaad2 26,34,39,44,52,69,71,143,150
+  s_6f374043e4b35a::t_d64b71c73fe505 23
+android/app/src/main/java/org/murabbie/shamela/ui/screens/BackupScreen.kt
+  s_6f374043e4b35a::t_cdb849368bcd2d 42,72
+  s_6f374043e4b35a::t_af22d454fa25aa 41,44,73
+  s_6f374043e4b35a::t_9d30590e81d480 67,70-71
+  s_6f374043e4b35a::t_2468ffa5fac8de 74-78
+android/app/src/main/res/xml/file_paths.xml
+  s_6f374043e4b35a::t_877d2dc0b709a1 3-5
+android/app/src/play/AndroidManifest.xml
+  s_6f374043e4b35a::t_877d2dc0b709a1 6-7
+android/app/src/main/java/org/murabbie/shamela/data/Tashkeel.kt
+  s_6f374043e4b35a::t_aec58594e80d3f 49-50
+docs/README-NAS.md
+  s_6f374043e4b35a::t_d64b71c73fe505 13,16,59
+android/app/src/main/java/org/murabbie/shamela/ui/screens/LibraryScreens.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 92
+android/app/src/main/java/org/murabbie/shamela/data/Library.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 113
+android/build.gradle.kts
+  s_6f374043e4b35a::t_877d2dc0b709a1 2
+android/app/src/main/java/org/murabbie/shamela/ui/screens/ReaderScreen.kt
+  s_6f374043e4b35a::t_c60e29b7901ec9 484
+play-store/data-safety.md
+  s_6f374043e4b35a::t_ddae262c89cd38 3-7,9,12-19
+  s_6f374043e4b35a::t_e9e888685e113d 20
+  s_6f374043e4b35a::t_208165d346f6f2 21
+android/app/src/main/java/org/murabbie/shamela/data/Speaker.kt
+  s_6f374043e4b35a::t_3e030f35741f41 93-94
+android/app/src/main/java/org/murabbie/shamela/ui/screens/SetupScreen.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 10,51,89-90,94
+android/app/src/main/AndroidManifest.xml
+  s_6f374043e4b35a::t_aec58594e80d3f 13-19
+android/app/src/main/java/org/murabbie/shamela/data/Backup.kt
+  s_6f374043e4b35a::t_aec58594e80d3f 108
+android/app/src/main/java/org/murabbie/shamela/ui/screens/MoreScreens.kt
+  s_6f374043e4b35a::t_877d2dc0b709a1 12,26,78,90-92,114,117,131,184,189,199-200,260,269
+android/app/src/main/java/org/murabbie/shamela/data/Services.kt
+  s_6f374043e4b35a::t_aec58594e80d3f 71-72
+android/app/build.gradle.kts
+  s_6f374043e4b35a::t_156475117e2a5e 22-23
+  s_6f374043e4b35a::t_877d2dc0b709a1 16,21,60-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6b726900a8acd5b41ca38115ce96915d9086b62e",
+  "prompts": {},
+  "sessions": {
+    "s_6f374043e4b35a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7c3be32e-f98c-4bb4-8fb3-15baef18a711",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    },
+    "s_ea966bcbc97229": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "adf7d863-b741-4166-9a52-d8bc3a10f102",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    }
+  }
+}
