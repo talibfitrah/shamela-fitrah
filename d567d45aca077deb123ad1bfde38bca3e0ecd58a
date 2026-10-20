@@ -1,0 +1,63 @@
+android/app/src/main/java/org/murabbie/shamela/ui/screens/ReaderScreen.kt
+  s_3be6de557f4c43::t_6f68651a0af7db 55
+  s_3be6de557f4c43::t_87796d462e85aa 458-459
+  s_3be6de557f4c43::t_024d88d2147333 451,453-457,460,462-463,465-466,469-471,473,475-491
+  s_3be6de557f4c43::t_b9ea792af72dd9 123
+  s_3be6de557f4c43::t_442a5dfe10b3ee 464
+  s_3be6de557f4c43::t_50a0e1ae3b1354 472
+  s_3be6de557f4c43::t_749ce7f44bfb82 223-224
+  s_3be6de557f4c43::t_b991e7edf0827f 82
+  s_3be6de557f4c43::t_2cf2e7efe0f274 322
+  s_3be6de557f4c43::t_935d46a580abab 48
+  s_3be6de557f4c43::t_46ca6bb5f10b43 461
+  s_3be6de557f4c43::t_eb95d7e70b7f7d 452
+  s_3be6de557f4c43::t_a020007bc2d41c 474
+  s_3be6de557f4c43::t_14495631abd622 16
+  s_3be6de557f4c43::t_90be6e787b59ed 324
+  s_3be6de557f4c43::t_889e52aee2873c 388-389
+  s_3be6de557f4c43::t_6fee2ec9f114e8 467
+  s_3be6de557f4c43::t_aa55d9b690ef8c 468
+android/app/src/main/java/org/murabbie/shamela/data/Settings.kt
+  s_3be6de557f4c43::t_ada9d14fc60c0e 94-95
+  s_3be6de557f4c43::t_6a72eee783835d 28-29
+  s_3be6de557f4c43::t_ec8c8addac358c 63-64
+android/app/build.gradle.kts
+  s_3be6de557f4c43::t_e7c19e82d3b454 22-23
+android/app/src/main/java/org/murabbie/shamela/ui/screens/SearchScreen.kt
+  s_3be6de557f4c43::t_d8d17d6dbd4ea2 83
+  s_3be6de557f4c43::t_91bc9a389bf529 98
+android/app/src/main/java/org/murabbie/shamela/data/Speaker.kt
+  s_3be6de557f4c43::t_bdb9807b40f3ee 24
+  s_3be6de557f4c43::t_a7ae872b32f822 16
+  s_3be6de557f4c43::t_c58125e925f7f3 65
+  s_3be6de557f4c43::t_7bd38e6d11c4da 74
+  s_3be6de557f4c43::t_2adf853e740172 54,56,58,62,68-69,72,77-81
+  s_3be6de557f4c43::t_a0f97e383f6f92 132
+  s_3be6de557f4c43::t_95e8d2e71bd864 41,47-50
+  s_3be6de557f4c43::t_c0e0e2c24a6f2d 86
+  s_3be6de557f4c43::t_7af95bd4810738 110-114
+  s_3be6de557f4c43::t_6e5540a5d5798a 82-83
+  s_3be6de557f4c43::t_2b5da733ef6967 31,33,36-40
+  s_3be6de557f4c43::t_1f57a162711a25 117-118,121,123,126,131,133-138,140-142,153,161
+  s_3be6de557f4c43::t_f141bf27710853 32
+  s_3be6de557f4c43::t_d12a344f45011f 147-148
+  s_3be6de557f4c43::t_9d7c7d14b64638 122,124-125
+  s_3be6de557f4c43::t_d2e3d9434d79c4 119-120,127-130,139,143-146,149-152,154-160
+  s_3be6de557f4c43::t_469d79d67ec602 7,15,17-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d567d45aca077deb123ad1bfde38bca3e0ecd58a",
+  "prompts": {},
+  "sessions": {
+    "s_3be6de557f4c43": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f682e057-f11b-4a46-9231-f9587a10a833",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    }
+  }
+}

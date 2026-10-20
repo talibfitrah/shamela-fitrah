@@ -1,0 +1,29 @@
+android/app/src/main/java/org/murabbie/shamela/ui/screens/NewBooksScreen.kt
+  s_3be6de557f4c43::t_cd22009d6e2e30 37,71
+CLAUDE.md
+  s_3be6de557f4c43::t_cd22009d6e2e30 119
+android/app/src/main/java/org/murabbie/shamela/ui/screens/ScholarScreen.kt
+  s_3be6de557f4c43::t_cd22009d6e2e30 36,88-89
+android/app/src/main/java/org/murabbie/shamela/ui/screens/SearchScreen.kt
+  s_3be6de557f4c43::t_cd22009d6e2e30 41-43,69-85,90-96,99-100,103,116-117,121
+android/app/src/main/java/org/murabbie/shamela/ui/screens/LibraryScreens.kt
+  s_3be6de557f4c43::t_cd22009d6e2e30 37,105,160,174,220
+android/app/src/main/java/org/murabbie/shamela/ui/screens/ServicesScreens.kt
+  s_3be6de557f4c43::t_cd22009d6e2e30 43,208,287
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "634e9c794f468fb04a483a0662afc83993c0e3c7",
+  "prompts": {},
+  "sessions": {
+    "s_3be6de557f4c43": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f682e057-f11b-4a46-9231-f9587a10a833",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "talibfitrah <fitrahtvnl@gmail.com>"
+    }
+  }
+}
